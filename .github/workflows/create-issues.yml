@@ -2,6 +2,10 @@ name: Créer les issues du projet Padel
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
 
 jobs:
   create-issues:
@@ -528,6 +532,19 @@ jobs:
                     console.log(`Could not create label "${label}": ${labelErr.message}`);
                   }
                 }
+              }
+
+              // Check if issue with same title already exists (deduplication)
+              const existing = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'all',
+                per_page: 100
+              });
+              const alreadyExists = existing.data.some(i => i.title === issue.title);
+              if (alreadyExists) {
+                console.log(`Issue already exists, skipping: ${issue.title}`);
+                continue;
               }
 
               const created = await github.rest.issues.create({
