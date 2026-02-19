@@ -534,14 +534,11 @@ jobs:
                 }
               }
 
-              // Check if issue with same title already exists (deduplication)
-              const existing = await github.rest.issues.listForRepo({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                state: 'all',
-                per_page: 100
+              // Check if issue with same title already exists (deduplication via search)
+              const searchResult = await github.rest.search.issuesAndPullRequests({
+                q: `repo:${context.repo.owner}/${context.repo.repo} is:issue in:title "${issue.title}"`
               });
-              const alreadyExists = existing.data.some(i => i.title === issue.title);
+              const alreadyExists = searchResult.data.items.some(i => i.title === issue.title);
               if (alreadyExists) {
                 console.log(`Issue already exists, skipping: ${issue.title}`);
                 continue;
