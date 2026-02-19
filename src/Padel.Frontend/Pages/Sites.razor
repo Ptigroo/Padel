@@ -1,0 +1,197 @@
+@page "/sites"
+@inject ISiteService SiteService
+
+<PageTitle>Gestion des sites</PageTitle>
+
+<h1>Gestion des sites</h1>
+
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="ShowCreateForm">
+        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Nouveau site
+    </button>
+</div>
+
+@if (showForm)
+{
+    <div class="card mb-4">
+        <div class="card-header">
+            @(editingSiteId.HasValue ? "Modifier le site" : "Créer un site")
+        </div>
+        <div class="card-body">
+            <EditForm Model="formModel" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label for="name" class="form-label">Nom</label>
+                    <InputText id="name" class="form-control" @bind-Value="formModel.Name" />
+                </div>
+                <div class="mb-3">
+                    <label for="address" class="form-label">Adresse</label>
+                    <InputText id="address" class="form-control" @bind-Value="formModel.Address" />
+                </div>
+
+                <button type="submit" class="btn btn-success" disabled="@isSubmitting">
+                    @(editingSiteId.HasValue ? "Mettre à jour" : "Créer")
+                </button>
+                <button type="button" class="btn btn-secondary ms-2" @onclick="CancelForm">Annuler</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (sites is null)
+{
+    <p><em>Chargement des sites...</em></p>
+}
+else if (sites.Count == 0)
+{
+    <p>Aucun site trouvé.</p>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nom</th>
+                <th>Adresse</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var site in sites)
+            {
+                <tr>
+                    <td>@site.Id</td>
+                    <td>@site.Name</td>
+                    <td>@site.Address</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => ShowEditForm(site)">
+                            Modifier
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteSite(site.Id)">
+                            Supprimer
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<SiteDto>? sites;
+    private CreateSiteDto formModel = new();
+    private int? editingSiteId;
+    private bool showForm;
+    private bool isSubmitting;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSites();
+    }
+
+    private async Task LoadSites()
+    {
+        try
+        {
+            sites = await SiteService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors du chargement des sites : {ex.Message}";
+        }
+    }
+
+    private void ShowCreateForm()
+    {
+        editingSiteId = null;
+        formModel = new CreateSiteDto();
+        showForm = true;
+    }
+
+    private void ShowEditForm(SiteDto site)
+    {
+        editingSiteId = site.Id;
+        formModel = new CreateSiteDto { Name = site.Name, Address = site.Address };
+        showForm = true;
+    }
+
+    private void CancelForm()
+    {
+        showForm = false;
+        editingSiteId = null;
+        formModel = new CreateSiteDto();
+    }
+
+    private async Task HandleSubmit()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            if (editingSiteId.HasValue)
+            {
+                var updateDto = new UpdateSiteDto { Name = formModel.Name, Address = formModel.Address };
+                var result = await SiteService.UpdateAsync(editingSiteId.Value, updateDto);
+                if (result is null)
+                {
+                    errorMessage = "Erreur lors de la mise à jour du site.";
+                    return;
+                }
+            }
+            else
+            {
+                var result = await SiteService.CreateAsync(formModel);
+                if (result is null)
+                {
+                    errorMessage = "Erreur lors de la création du site.";
+                    return;
+                }
+            }
+
+            CancelForm();
+            await LoadSites();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task DeleteSite(int id)
+    {
+        errorMessage = null;
+
+        try
+        {
+            var success = await SiteService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = "Erreur lors de la suppression du site.";
+                return;
+            }
+
+            await LoadSites();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+    }
+}

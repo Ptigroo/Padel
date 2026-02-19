@@ -3,6 +3,7 @@
     <Project Path="src/Padel.Api/Padel.Api.csproj" />
     <Project Path="src/Padel.Application/Padel.Application.csproj" />
     <Project Path="src/Padel.Domain/Padel.Domain.csproj" />
+    <Project Path="src/Padel.Frontend/Padel.Frontend.csproj" />
     <Project Path="src/Padel.Infrastructure/Padel.Infrastructure.csproj" />
   </Folder>
 </Solution>
