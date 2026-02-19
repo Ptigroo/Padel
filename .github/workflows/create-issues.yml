@@ -1,0 +1,541 @@
+name: Créer les issues du projet Padel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Créer les issues dans l'ordre de priorité
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = [
+              // ============================================================
+              // P0 — Fondations techniques obligatoires
+              // ============================================================
+              {
+                title: "[P0] Feature 12 — Sécurité base de données",
+                body: `## Feature 12 — Sécurité base de données
+
+> Ne pas utiliser un user avec tous les droits. Users spécifiques avec droits spécifiques.
+
+### Tâches
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 12.1 | Script SQL création utilisateurs | Deux logins/users SQL : \`padel_app_user\` (CRUD) et \`padel_readonly\` (SELECT uniquement) |
+| 12.2 | Droits granulaires | \`GRANT SELECT, INSERT, UPDATE, DELETE\` table par table pour l'utilisateur applicatif |
+| 12.3 | Droits lecture seule | \`GRANT SELECT\` table par table pour l'utilisateur stats/reporting |
+| 12.4 | Connection string spécifique | Utiliser \`padel_app_user\` dans la connection string de l'API (pas \`sa\` ni \`dbo\`) |
+| 12.5 | Documentation du choix | Accès direct aux tables vs procédures stockées : avantages/inconvénients (justifier) |
+
+### Choix de conception à documenter
+
+| Approche | Avantages | Inconvénients |
+|----------|-----------|---------------|
+| Accès direct aux tables | Simple, compatible EF Core, pas de duplication de logique | L'utilisateur peut exécuter des requêtes non prévues |
+| Procédures stockées uniquement | Contrôle total sur les opérations possibles | Complexité, duplication de logique, moins compatible avec l'ORM |`,
+                labels: ["P0", "sécurité", "base de données"]
+              },
+              {
+                title: "[P0] Feature 14 — Infrastructure et DevOps",
+                body: `## Feature 14 — Infrastructure et DevOps
+
+### Tâches
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 14.1 | Git | Dépôt avec historique propre, branches, commits significatifs |
+| 14.2 | Issues Git | Une issue par feature/tâche majeure dans GitHub |
+| 14.3 | Séparation front/back | Deux projets distincts (PadelManager API + PadelFrontend Blazor WASM) |
+| 14.4 | CORS | Configuration CORS dans l'API pour autoriser le frontend |
+| 14.5 | Connection string | Configuration via \`appsettings.json\`, pas de mot de passe en dur en production |
+| 14.6 | EnsureCreated / Migrations | Création automatique de la base en dev (\`EnsureCreated\`) ou migrations EF Core |
+| 14.7 | README | Documentation de lancement (API + Frontend) |
+| 14.8 | Injection de dépendances | Enregistrement de tous les services/repos dans \`Program.cs\` |`,
+                labels: ["P0", "infrastructure", "devops"]
+              },
+              {
+                title: "[P0] Feature 1 — Gestion des sites",
+                body: `## Feature 1 — Gestion des sites
+
+> Un gestionnaire possède plusieurs sites de terrains de padel.
+
+### Tâches back-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 1.1 | Modèle \`Site\` | Entité avec \`Id\`, \`Name\`, \`Address\` |
+| 1.2 | DTO \`SiteDto\`, \`CreateSiteDto\`, \`UpdateSiteDto\` | Objets de transfert pour l'API |
+| 1.3 | Repository \`ISiteRepository\` / \`SiteRepository\` | CRUD + requêtes avec Include (Courts, Schedules, ClosureDays) |
+| 1.4 | Service \`ISiteService\` / \`SiteService\` | Logique métier : création, mise à jour, suppression, mapping DTO |
+| 1.5 | Controller \`SitesController\` | Endpoints : \`GET /api/sites\`, \`GET /api/sites/{id}\`, \`POST\`, \`PUT/{id}\`, \`DELETE/{id}\` |
+| 1.6 | Configuration EF Core | Clé primaire, contraintes \`IsRequired\`, \`HasMaxLength\` |
+| 1.7 | Tests unitaires | Tests du controller, du service, du repository |
+
+### Tâches front-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 1.8 | Page admin sites | Liste, création, modification, suppression de sites |`,
+                labels: ["P0", "back-end", "front-end", "sites"]
+              },
+              {
+                title: "[P0] Feature 2 — Gestion des terrains",
+                body: `## Feature 2 — Gestion des terrains
+
+> Chaque site a un nombre différent de terrains.
+
+### Tâches back-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 2.1 | Modèle \`Court\` | Entité avec \`Id\`, \`Name\`, \`SiteId\` + relation FK vers \`Site\` |
+| 2.2 | DTO \`CourtDto\`, \`CreateCourtDto\` | Objets de transfert |
+| 2.3 | Repository générique \`IRepository<Court>\` | Utilisation du repository générique |
+| 2.4 | Service \`ICourtService\` / \`CourtService\` | CRUD + calcul des créneaux disponibles |
+| 2.5 | Controller \`CourtsController\` | Endpoints : \`GET /api/courts/site/{siteId}\`, \`GET/{id}\`, \`POST\`, \`DELETE/{id}\` |
+| 2.6 | Endpoint créneaux | \`GET /api/courts/{id}/slots/{date}\` — retourne les créneaux libres pour une date |
+| 2.7 | Logique créneaux | Slots de 1h30 + 15 min de pause, basés sur les horaires du site et les matchs existants |
+| 2.8 | Vérification jour de fermeture | Aucun créneau si jour de fermeture (global ou site) |
+| 2.9 | Configuration EF Core | FK \`Court → Site\` avec \`OnDelete(Restrict)\` |
+| 2.10 | Tests unitaires | Tests du service (calcul créneaux), controller, repository |
+
+### Tâches front-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 2.11 | Gestion terrains dans page admin sites | Ajout/suppression de terrains pour un site sélectionné |`,
+                labels: ["P0", "back-end", "front-end", "terrains"]
+              },
+              {
+                title: "[P0] Feature 3 — Gestion des horaires",
+                body: `## Feature 3 — Gestion des horaires
+
+> Les heures de début et de fin de réservation sont spécifiques à chaque site, par année civile.
+
+### Tâches back-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 3.1 | Modèle \`SiteSchedule\` | \`Id\`, \`SiteId\`, \`Year\`, \`StartTime\` (TimeOnly), \`EndTime\` (TimeOnly) |
+| 3.2 | DTO \`SiteScheduleDto\`, \`CreateSiteScheduleDto\` | Objets de transfert |
+| 3.3 | Repository générique | \`IRepository<SiteSchedule>\` |
+| 3.4 | Service \`IScheduleService\` / \`ScheduleService\` | Création avec vérification d'unicité (un seul horaire par site/année) |
+| 3.5 | Controller \`SchedulesController\` | \`GET /api/schedules/site/{siteId}\`, \`POST\`, \`DELETE/{id}\` |
+| 3.6 | Index unique EF Core | Contrainte unique sur \`(SiteId, Year)\` |
+| 3.7 | Tests unitaires | Vérification de la contrainte d'unicité, CRUD |
+
+### Tâches front-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 3.8 | Gestion horaires dans page admin sites | Ajout/suppression d'horaires annuels pour un site |`,
+                labels: ["P0", "back-end", "front-end", "horaires"]
+              },
+              {
+                title: "[P0] Feature 5 — Gestion des membres",
+                body: `## Feature 5 — Gestion des membres
+
+> 3 types de membres : Global (Gxxxx), Site (Sxxxxx), Libre (Lxxxxx).
+
+### Tâches back-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 5.1 | Modèle \`Member\` | \`Id\`, \`Matricule\`, \`FirstName\`, \`LastName\`, \`Email\`, \`MemberType\`, \`SiteId\`, \`ReservationBlocked\`, \`BlockedUntil\` |
+| 5.2 | Enum \`MemberType\` | \`Global\`, \`Site\`, \`Libre\` |
+| 5.3 | Génération du matricule | Format automatique : \`G0001\`, \`S00001\`, \`L00001\` selon le type |
+| 5.4 | DTO \`MemberDto\`, \`CreateMemberDto\`, \`UpdateMemberDto\` | Objets de transfert |
+| 5.5 | Repository \`IMemberRepository\` / \`MemberRepository\` | Recherche par matricule, par site, avec include |
+| 5.6 | Service \`IMemberService\` / \`MemberService\` | Création avec validation (Site nécessite SiteId), génération matricule |
+| 5.7 | Controller \`MembersController\` | \`GET\`, \`GET/site/{siteId}\`, \`GET/{matricule}\`, \`POST\`, \`PUT/{matricule}\`, \`DELETE/{matricule}\` |
+| 5.8 | Validation | Membre Site doit avoir un \`SiteId\` |
+| 5.9 | Index unique EF Core | Matricule unique |
+| 5.10 | Tests unitaires | Génération matricule, validation type/site, CRUD |
+
+### Règles de visibilité
+
+| Type | Visible | Peut réserver | Délai réservation |
+|------|---------|---------------|-------------------|
+| Global (\`Gxxxx\`) | Tous les sites | N'importe quel site | 3 semaines avant |
+| Site (\`Sxxxxx\`) | Tous les sites | Son site uniquement | 2 semaines avant |
+| Libre (\`Lxxxxx\`) | Tous les sites | N'importe quel site | 5 jours avant |
+
+### Tâches front-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 5.11 | Page admin membres | Création, liste, filtrage par site, suppression |
+| 5.12 | Affichage blocage | Badge visuel si membre bloqué + date de fin |`,
+                labels: ["P0", "back-end", "front-end", "membres"]
+              },
+
+              // ============================================================
+              // P1 — Cœur métier prioritaire
+              // ============================================================
+              {
+                title: "[P1] Feature 6 — Gestion des réservations (matchs)",
+                body: `## Feature 6 — Gestion des réservations (matchs)
+
+> Cœur du projet. Matchs privés ou publics avec règles spécifiques.
+
+### Tâches back-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 6.1 | Modèle \`Match\` | \`Id\`, \`CourtId\`, \`OrganizerId\`, \`ScheduledAt\`, \`EndsAt\`, \`MatchType\`, \`Status\` |
+| 6.2 | Modèle \`MatchPlayer\` | Table de jointure \`Match ↔ Member\` avec \`JoinedAt\` |
+| 6.3 | Enums \`MatchType\`, \`MatchStatus\` | Private/Public, Scheduled/Full/Completed/Cancelled |
+| 6.4 | DTO \`MatchDto\`, \`CreateMatchDto\`, \`AddPlayerDto\`, \`MatchPlayerDto\` | Objets de transfert |
+| 6.5 | Repository \`IMatchRepository\` / \`MatchRepository\` | Requêtes spécialisées avec Include complet |
+| 6.6 | Service \`IMatchService\` / \`MatchService\` | Logique métier centrale |
+| 6.7 | Controller \`MatchesController\` | Endpoints listés ci-dessous |
+
+### Sous-tâches du service de réservation
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 6.8 | Création de match | Validation : blocage organisateur, solde impayé, accès site, fenêtre de réservation, horaire, fermeture, disponibilité créneau |
+| 6.9 | Auto-inscription organisateur | L'organisateur est automatiquement ajouté comme premier joueur |
+| 6.10 | Création paiement automatique | Un paiement \`Pending\` de 15 € est créé pour chaque joueur ajouté |
+| 6.11 | Match privé — ajout joueur | Seul l'organisateur peut ajouter des joueurs via \`POST /api/matches/{id}/players\` |
+| 6.12 | Match public — rejoindre | N'importe quel membre rejoint via \`POST /api/matches/{id}/join/{matricule}\` |
+| 6.13 | Match public — interdiction | L'organisateur ne peut PAS ajouter d'autres joueurs dans un match public |
+| 6.14 | Validation fenêtre de réservation | Global = 21 jours, Site = 14 jours, Libre = 5 jours max avant le match |
+| 6.15 | Validation accès site | Membre Site ne peut réserver que sur son propre site |
+| 6.16 | Validation blocage | Vérifier \`ReservationBlocked\` et \`BlockedUntil\` avant de créer un match |
+| 6.17 | Validation solde | Organisateur avec solde impayé ne peut pas réserver |
+| 6.18 | Passage à \`Full\` | Quand 4 joueurs sont inscrits, le statut passe à \`Full\` |
+
+### Endpoints
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| \`GET\` | \`/api/matches\` | Tous les matchs (admin) |
+| \`GET\` | \`/api/matches/{id}\` | Détail d'un match |
+| \`GET\` | \`/api/matches/public?siteId=\` | Matchs publics (filtrable par site) |
+| \`GET\` | \`/api/matches/organizer/{matricule}\` | Matchs organisés par un membre |
+| \`GET\` | \`/api/matches/player/{matricule}\` | Matchs d'un joueur |
+| \`GET\` | \`/api/matches/site/{siteId}\` | Matchs d'un site |
+| \`POST\` | \`/api/matches\` | Créer un match |
+| \`POST\` | \`/api/matches/{id}/players\` | Ajouter un joueur (privé) |
+| \`POST\` | \`/api/matches/{id}/join/{matricule}\` | Rejoindre un match (public) |
+| \`POST\` | \`/api/matches/process-day-before\` | Déclencher les règles J-1 manuellement |
+
+### Tâches front-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 6.19 | Page réservation | Sélection site → terrain → date → créneau → type → création |
+| 6.20 | Ajout joueurs (privé) | Formulaire d'ajout de matricule après création d'un match privé |
+| 6.21 | Page matchs publics | Liste des matchs publics avec filtre par site, bouton "Rejoindre" |
+| 6.22 | Page mes matchs | Recherche par matricule, affichage rôle (organisateur/joueur) |
+
+### Tests
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 6.23 | Tests service — création match | Cas nominal + tous les cas de rejet (blocage, solde, site, fenêtre, horaire, fermeture, créneau pris) |
+| 6.24 | Tests service — ajout joueur privé | Cas nominal + rejet si public, si complet, si déjà inscrit |
+| 6.25 | Tests service — rejoindre public | Cas nominal + rejet si privé, si complet, si déjà inscrit |
+| 6.26 | Tests controller | Vérification des codes HTTP (201, 400, 404) |
+| 6.27 | Tests repository | Vérification des requêtes Include, filtres |`,
+                labels: ["P1", "back-end", "front-end", "réservations"]
+              },
+              {
+                title: "[P1] Feature 7 — Gestion des paiements",
+                body: `## Feature 7 — Gestion des paiements
+
+> 60 € par match, divisé en 4 × 15 €. Paiement à l'avance obligatoire.
+
+### Tâches back-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 7.1 | Modèle \`Payment\` | \`Id\`, \`MatchPlayerId\`, \`MatchId\`, \`MemberId\`, \`Amount\`, \`Status\`, \`CreatedAt\`, \`PaidAt\` |
+| 7.2 | Enum \`PaymentStatus\` | \`Pending\`, \`Paid\`, \`Refunded\` |
+| 7.3 | DTO \`PaymentDto\`, \`ProcessPaymentDto\` | Objets de transfert |
+| 7.4 | Repository \`IPaymentRepository\` / \`PaymentRepository\` | Par membre, par match, solde impayé, revenus par site/global |
+| 7.5 | Service \`IPaymentService\` / \`PaymentService\` | Logique de paiement |
+| 7.6 | Controller \`PaymentsController\` | Endpoints ci-dessous |
+
+### Sous-tâches du service de paiement
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 7.7 | Paiement d'un joueur | \`POST /api/payments/pay\` — marque le paiement comme \`Paid\` |
+| 7.8 | Report de solde | Si l'organisateur a un solde impayé d'un autre match public, celui-ci s'ajoute au montant lors du prochain paiement |
+| 7.9 | Solde bloque réservation | Un organisateur avec solde > 0 ne peut pas créer de nouveau match |
+| 7.10 | Calcul solde | \`GET /api/payments/balance/{matricule}\` — retourne le solde dû |
+| 7.11 | Match public incomplet | Si < 4 joueurs à la date du match, l'organisateur doit payer le solde restant (places non remplies) |
+
+### Endpoints
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| \`POST\` | \`/api/payments/pay\` | Effectuer un paiement |
+| \`GET\` | \`/api/payments/member/{matricule}\` | Paiements d'un membre |
+| \`GET\` | \`/api/payments/match/{matchId}\` | Paiements d'un match |
+| \`GET\` | \`/api/payments/balance/{matricule}\` | Solde dû d'un membre |
+
+### Tâches front-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 7.12 | Page mes paiements | Liste des paiements, solde dû, bouton "Payer" |
+
+### Tests
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 7.13 | Tests service — paiement | Cas nominal, double paiement, report de solde |
+| 7.14 | Tests service — solde | Calcul correct du solde impayé |
+| 7.15 | Tests controller | Codes HTTP, erreurs métier |`,
+                labels: ["P1", "back-end", "front-end", "paiements"]
+              },
+              {
+                title: "[P1] Feature 8 — Règles automatiques J-1",
+                body: `## Feature 8 — Règles automatiques J-1
+
+> La veille du match, des règles s'appliquent automatiquement.
+
+### Tâches back-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 8.1 | Règle 1 : privé → public | Si un match privé n'a pas 4 joueurs la veille → il devient public |
+| 8.2 | Pénalité organisateur | L'organisateur d'un match privé incomplet reçoit un blocage de réservation d'1 semaine |
+| 8.3 | Règle 2 : joueurs impayés | Si un joueur n'a pas payé la veille → il est retiré du match, sa place redevient libre |
+| 8.4 | Transition de statut | Si un match passe en dessous de 4 joueurs suite au retrait → redevient \`Public\` + \`Scheduled\` |
+| 8.5 | Background job \`DayBeforeMatchJob\` | Service hébergé qui exécute les règles périodiquement (toutes les heures) |
+| 8.6 | Endpoint manuel | \`POST /api/matches/process-day-before\` pour déclencher manuellement (utile en dev/admin) |
+| 8.7 | Repository — requêtes spécialisées | \`GetMatchesBecomingPublicAsync()\`, \`GetMatchesWithUnpaidPlayersAsync()\` |
+
+### Tests
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 8.8 | Test règle privé → public | Vérifier le changement de type et la pénalité |
+| 8.9 | Test retrait joueur impayé | Vérifier le retrait et la transition de statut |
+| 8.10 | Test match complet payé | Aucun changement ne doit se produire |`,
+                labels: ["P1", "back-end", "règles-automatiques"]
+              },
+
+              // ============================================================
+              // P2 — Important secondaire
+              // ============================================================
+              {
+                title: "[P2] Feature 4 — Gestion des jours de fermeture",
+                body: `## Feature 4 — Gestion des jours de fermeture
+
+> Pour chaque site et de manière globale, prévoir des jours de fermeture.
+
+### Tâches back-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 4.1 | Modèle \`ClosureDay\` | \`Id\`, \`Date\` (DateOnly), \`Reason\`, \`SiteId\` (nullable — null = global) |
+| 4.2 | DTO \`ClosureDayDto\`, \`CreateClosureDayDto\` | Objets de transfert |
+| 4.3 | Service \`IClosureDayService\` / \`ClosureDayService\` | Liste filtrée par site (inclut les globaux), création, suppression |
+| 4.4 | Controller \`ClosureDaysController\` | \`GET /api/closuredays?siteId=\`, \`POST\`, \`DELETE/{id}\` |
+| 4.5 | Intégration réservation | Vérifier les jours de fermeture lors de la création d'un match |
+| 4.6 | Intégration créneaux | Aucun créneau retourné si le jour est fermé |
+| 4.7 | Tests unitaires | Test de filtrage global + site, intégration avec réservation |
+
+### Tâches front-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 4.8 | Gestion fermetures dans page admin sites | Ajout/suppression, affichage (global vs site spécifique) |`,
+                labels: ["P2", "back-end", "front-end", "fermetures"]
+              },
+              {
+                title: "[P2] Feature 11 — Statistiques et chiffre d'affaires",
+                body: `## Feature 11 — Statistiques et chiffre d'affaires
+
+> L'administrateur peut voir les statistiques et le chiffre d'affaires.
+
+### Tâches back-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 11.1 | Service \`IStatsService\` / \`StatsService\` | Agrégation des données par site et globalement |
+| 11.2 | DTO \`GlobalStatsDto\`, \`SiteStatsDto\` | Total sites, matchs, revenus, membres + détail par site |
+| 11.3 | Controller \`StatsController\` | \`GET /api/stats\` (global), \`GET /api/stats/site/{siteId}\` |
+| 11.4 | Calcul revenus | Somme des paiements \`Paid\`, par site et globalement |
+| 11.5 | Comptage matchs par statut | Scheduled, Full, Completed, Cancelled par site |
+
+### Tâches front-end
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 11.6 | Dashboard global | Cartes : total sites, matchs, membres, CA |
+| 11.7 | Détails par site | Cartes individuelles avec breakdown matchs + revenus + membres |
+
+### Tests
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 11.8 | Tests service stats | Vérification des agrégations |
+| 11.9 | Tests controller | Codes HTTP, réponses |`,
+                labels: ["P2", "back-end", "front-end", "statistiques"]
+              },
+
+              // ============================================================
+              // P3 — Interfaces et tests
+              // ============================================================
+              {
+                title: "[P3] Feature 9 — Interface utilisateur (Frontend)",
+                body: `## Feature 9 — Interface utilisateur (Frontend)
+
+> Première interface : pour les utilisateurs (joueurs).
+
+### Pages
+
+| # | Tâche | Route | Détail |
+|---|-------|-------|--------|
+| 9.1 | Accueil | \`/\` | Informations générales, liens rapides, règles (tarifs, durée, délais) |
+| 9.2 | Matchs publics | \`/matches/public\` | Liste des matchs publics, filtre par site, bouton "Rejoindre" avec saisie matricule |
+| 9.3 | Réservation | \`/reservations\` | Wizard : site → terrain → date → créneau → type → création. Puis ajout joueurs si privé |
+| 9.4 | Mes matchs | \`/my-matches\` | Saisie matricule → liste des matchs (organisateur ou joueur), statut, type |
+| 9.5 | Mes paiements | \`/my-payments\` | Saisie matricule → solde dû, liste des paiements, bouton "Payer" |
+
+### Composants transversaux
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 9.6 | NavMenu | Menu latéral avec liens utilisateur + admin |
+| 9.7 | MainLayout | Layout principal (sidebar + barre de navigation + contenu) |
+| 9.8 | ApiService | Service HTTP centralisé pour tous les appels API |
+| 9.9 | Modèles DTO front | Miroir des DTOs de l'API pour la désérialisation |
+| 9.10 | Gestion d'erreurs | Affichage des erreurs API dans des alertes Bootstrap |`,
+                labels: ["P3", "front-end", "utilisateur"]
+              },
+              {
+                title: "[P3] Feature 10 — Interface administrateur (Frontend)",
+                body: `## Feature 10 — Interface administrateur (Frontend)
+
+> Deuxième interface : pour les administrateurs (global et par site).
+
+### Pages
+
+| # | Tâche | Route | Détail |
+|---|-------|-------|--------|
+| 10.1 | Gestion des sites | \`/admin/sites\` | CRUD sites + terrains + horaires + jours de fermeture |
+| 10.2 | Gestion des membres | \`/admin/members\` | Création, liste, filtre par site/type, suppression, affichage blocage |
+| 10.3 | Tous les matchs | \`/admin/matches\` | Liste de tous les matchs, filtre par site, détails (modal), déclenchement règles J-1 |
+| 10.4 | Statistiques | \`/admin/stats\` | Dashboard global + détails par site |
+
+### Tâches techniques
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 10.5 | Admin global vs site | L'admin global voit et gère tous les sites ; l'admin site ne voit que son site |
+| 10.6 | Distinction visuelle | Badges, couleurs, icônes pour différencier types, statuts, paiements |`,
+                labels: ["P3", "front-end", "administrateur"]
+              },
+              {
+                title: "[P3] Feature 13 — Tests",
+                body: `## Feature 13 — Tests
+
+> Tests obligatoires dans la partie back-end (controllers, services, repositories).
+
+### Tâches
+
+| # | Tâche | Détail |
+|---|-------|--------|
+| 13.1 | Projet de test | Créer un projet xUnit/NUnit séparé (ex: \`PadelManager.Tests\`) |
+| 13.2 | Mocking | Utiliser Moq ou NSubstitute pour mocker les dépendances (repositories dans les services, services dans les controllers) |
+| 13.3 | Base en mémoire | Utiliser \`UseInMemoryDatabase\` ou SQLite in-memory pour les tests de repositories |
+| 13.4 | Tests controllers | Vérifier les codes HTTP retournés (200, 201, 400, 404, 204) |
+| 13.5 | Tests services | Vérifier toute la logique métier (validations, calculs, règles) |
+| 13.6 | Tests repositories | Vérifier les requêtes (filtres, includes, agrégations) |
+| 13.7 | Couverture métier critique | Priorité : MatchService, PaymentService, règles J-1 |
+
+### Scénarios de test prioritaires
+
+| Scénario | Service | Ce qu'on vérifie |
+|----------|---------|-----------------|
+| Créer un match — cas nominal | MatchService | Match créé, organisateur ajouté, paiement créé |
+| Créer un match — membre bloqué | MatchService | Rejet avec message d'erreur |
+| Créer un match — solde impayé | MatchService | Rejet avec message d'erreur |
+| Créer un match — mauvais site (membre site) | MatchService | Rejet |
+| Créer un match — hors fenêtre | MatchService | Rejet selon le type de membre |
+| Créer un match — jour de fermeture | MatchService | Rejet |
+| Créer un match — créneau pris | MatchService | Rejet |
+| Rejoindre un match public | MatchService | Joueur ajouté, paiement créé |
+| Ajouter joueur match privé | MatchService | Joueur ajouté par l'organisateur |
+| Payer — cas nominal | PaymentService | Statut \`Paid\`, date de paiement |
+| Payer — double paiement | PaymentService | Rejet |
+| Payer — avec report de solde | PaymentService | Montant augmenté du solde dû |
+| Règle J-1 — privé incomplet | MatchService | Devient public, organisateur bloqué 7 jours |
+| Règle J-1 — joueur impayé | MatchService | Joueur retiré, match redevient ouvert |
+| Calcul créneaux | CourtService | Slots corrects selon horaires, matchs existants, fermetures |`,
+                labels: ["P3", "tests", "qualité"]
+              }
+            ];
+
+            for (const issue of issues) {
+              // Try to create labels if they don't exist
+              for (const label of issue.labels) {
+                try {
+                  await github.rest.issues.getLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: label
+                  });
+                } catch (e) {
+                  // Label doesn't exist, create it
+                  const colors = {
+                    'P0': 'e11d48',
+                    'P1': 'f97316',
+                    'P2': 'eab308',
+                    'P3': '22c55e',
+                    'back-end': '3b82f6',
+                    'front-end': '8b5cf6',
+                    'sécurité': 'dc2626',
+                    'base de données': '0ea5e9',
+                    'infrastructure': '64748b',
+                    'devops': '475569',
+                    'sites': '0d9488',
+                    'terrains': '0891b2',
+                    'horaires': '0284c7',
+                    'membres': '7c3aed',
+                    'réservations': 'b45309',
+                    'paiements': '15803d',
+                    'règles-automatiques': 'b91c1c',
+                    'fermetures': '92400e',
+                    'statistiques': '1d4ed8',
+                    'utilisateur': '6d28d9',
+                    'administrateur': '4338ca',
+                    'tests': '047857',
+                    'qualité': '065f46'
+                  };
+                  try {
+                    await github.rest.issues.createLabel({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      name: label,
+                      color: colors[label] || '6b7280'
+                    });
+                  } catch (labelErr) {
+                    console.log(`Could not create label "${label}": ${labelErr.message}`);
+                  }
+                }
+              }
+
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issue.title,
+                body: issue.body,
+                labels: issue.labels
+              });
+              console.log(`Created issue #${created.data.number}: ${issue.title}`);
+            }
