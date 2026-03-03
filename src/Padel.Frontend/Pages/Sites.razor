@@ -1,5 +1,6 @@
 @page "/sites"
 @inject ISiteService SiteService
+@inject ICourtService CourtService
 
 <PageTitle>Gestion des sites</PageTitle>
 
@@ -70,11 +71,14 @@ else
         <tbody>
             @foreach (var site in sites)
             {
-                <tr>
+                <tr class="@(selectedSiteId == site.Id ? "table-active" : "")">
                     <td>@site.Id</td>
                     <td>@site.Name</td>
                     <td>@site.Address</td>
                     <td>
+                        <button class="btn btn-sm btn-outline-info me-1" @onclick="() => SelectSite(site)">
+                            Terrains
+                        </button>
                         <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => ShowEditForm(site)">
                             Modifier
                         </button>
@@ -88,6 +92,64 @@ else
     </table>
 }
 
+@* ── Section terrains du site sélectionné ── *@
+@if (selectedSite is not null)
+{
+    <hr />
+    <h3>Terrains — @selectedSite.Name</h3>
+
+    <div class="mb-3">
+        <EditForm Model="courtFormModel" OnValidSubmit="HandleCourtSubmit" class="row g-2 align-items-end">
+            <DataAnnotationsValidator />
+            <div class="col-auto">
+                <label for="courtName" class="form-label">Nom du terrain</label>
+                <InputText id="courtName" class="form-control" @bind-Value="courtFormModel.Name" />
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-success">Ajouter</button>
+            </div>
+            <div class="col-12">
+                <ValidationSummary />
+            </div>
+        </EditForm>
+    </div>
+
+    @if (courts is null)
+    {
+        <p><em>Chargement des terrains...</em></p>
+    }
+    else if (courts.Count == 0)
+    {
+        <p>Aucun terrain pour ce site.</p>
+    }
+    else
+    {
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Nom</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var court in courts)
+                {
+                    <tr>
+                        <td>@court.Id</td>
+                        <td>@court.Name</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCourt(court.Id)">
+                                Supprimer
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
 @code {
     private List<SiteDto>? sites;
     private CreateSiteDto formModel = new();
@@ -95,6 +157,12 @@ else
     private bool showForm;
     private bool isSubmitting;
     private string? errorMessage;
+
+    // Courts
+    private SiteDto? selectedSite;
+    private int? selectedSiteId;
+    private List<CourtDto>? courts;
+    private CreateCourtDto courtFormModel = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -187,7 +255,82 @@ else
                 return;
             }
 
+            if (selectedSiteId == id)
+            {
+                selectedSite = null;
+                selectedSiteId = null;
+                courts = null;
+            }
+
             await LoadSites();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+    }
+
+    // ── Courts ──
+
+    private async Task SelectSite(SiteDto site)
+    {
+        selectedSite = site;
+        selectedSiteId = site.Id;
+        courtFormModel = new CreateCourtDto { SiteId = site.Id };
+        await LoadCourts();
+    }
+
+    private async Task LoadCourts()
+    {
+        if (selectedSiteId is null) return;
+
+        try
+        {
+            courts = await CourtService.GetBySiteIdAsync(selectedSiteId.Value);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors du chargement des terrains : {ex.Message}";
+        }
+    }
+
+    private async Task HandleCourtSubmit()
+    {
+        errorMessage = null;
+
+        try
+        {
+            courtFormModel.SiteId = selectedSiteId!.Value;
+            var result = await CourtService.CreateAsync(courtFormModel);
+            if (result is null)
+            {
+                errorMessage = "Erreur lors de la création du terrain.";
+                return;
+            }
+
+            courtFormModel = new CreateCourtDto { SiteId = selectedSiteId.Value };
+            await LoadCourts();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+    }
+
+    private async Task DeleteCourt(int id)
+    {
+        errorMessage = null;
+
+        try
+        {
+            var success = await CourtService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = "Erreur lors de la suppression du terrain.";
+                return;
+            }
+
+            await LoadCourts();
         }
         catch (Exception ex)
         {

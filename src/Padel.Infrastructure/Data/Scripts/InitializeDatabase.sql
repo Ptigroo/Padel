@@ -24,3 +24,16 @@ BEGIN
     );
 END
 GO
+
+-- Table des terrains
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Courts]') AND type = N'U')
+BEGIN
+    CREATE TABLE [dbo].[Courts] (
+        [Id]     INT           IDENTITY(1,1) NOT NULL,
+        [Name]   NVARCHAR(100) NOT NULL,
+        [SiteId] INT           NOT NULL,
+        CONSTRAINT [PK_Courts] PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT [FK_Courts_Sites] FOREIGN KEY ([SiteId]) REFERENCES [dbo].[Sites]([Id])
+    );
+END
+GO

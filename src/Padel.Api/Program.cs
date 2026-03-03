@@ -24,6 +24,8 @@ builder.Services.AddDbContext<PadelDbContext>(options =>
 
 builder.Services.AddScoped<ISiteRepository, SiteRepository>();
 builder.Services.AddScoped<ISiteService, SiteService>();
+builder.Services.AddScoped<ICourtRepository, CourtRepository>();
+builder.Services.AddScoped<ICourtService, CourtService>();
 
 var app = builder.Build();
 
