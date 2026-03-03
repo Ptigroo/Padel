@@ -6,4 +6,5 @@ public class Site
     public required string Name { get; set; }
     public required string Address { get; set; }
     public ICollection<Court> Courts { get; set; } = [];
+    public ICollection<SiteSchedule> Schedules { get; set; } = [];
 }

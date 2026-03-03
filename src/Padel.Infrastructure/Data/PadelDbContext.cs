@@ -7,6 +7,7 @@ public class PadelDbContext(DbContextOptions<PadelDbContext> options) : DbContex
 {
     public DbSet<Site> Sites => Set<Site>();
     public DbSet<Court> Courts => Set<Court>();
+    public DbSet<SiteSchedule> SiteSchedules => Set<SiteSchedule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

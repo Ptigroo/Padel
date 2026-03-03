@@ -26,6 +26,8 @@ builder.Services.AddScoped<ISiteRepository, SiteRepository>();
 builder.Services.AddScoped<ISiteService, SiteService>();
 builder.Services.AddScoped<ICourtRepository, CourtRepository>();
 builder.Services.AddScoped<ICourtService, CourtService>();
+builder.Services.AddScoped<ISiteScheduleRepository, SiteScheduleRepository>();
+builder.Services.AddScoped<IScheduleService, ScheduleService>();
 
 var app = builder.Build();
 

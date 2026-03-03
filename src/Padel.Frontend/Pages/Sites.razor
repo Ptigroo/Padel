@@ -1,6 +1,7 @@
 @page "/sites"
 @inject ISiteService SiteService
 @inject ICourtService CourtService
+@inject IScheduleService ScheduleService
 
 <PageTitle>Gestion des sites</PageTitle>
 
@@ -76,8 +77,11 @@ else
                     <td>@site.Name</td>
                     <td>@site.Address</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-info me-1" @onclick="() => SelectSite(site)">
+                        <button class="btn btn-sm btn-outline-info me-1" @onclick='() => SelectSite(site, "courts")'>
                             Terrains
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning me-1" @onclick='() => SelectSite(site, "schedules")'>
+                            Horaires
                         </button>
                         <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => ShowEditForm(site)">
                             Modifier
@@ -93,7 +97,7 @@ else
 }
 
 @* ── Section terrains du site sélectionné ── *@
-@if (selectedSite is not null)
+@if (selectedSite is not null && activeTab == "courts")
 {
     <hr />
     <h3>Terrains — @selectedSite.Name</h3>
@@ -150,6 +154,74 @@ else
     }
 }
 
+@* ── Section horaires du site sélectionné ── *@
+@if (selectedSite is not null && activeTab == "schedules")
+{
+    <hr />
+    <h3>Horaires — @selectedSite.Name</h3>
+
+    <div class="mb-3">
+        <EditForm Model="scheduleFormModel" OnValidSubmit="HandleScheduleSubmit" class="row g-2 align-items-end">
+            <DataAnnotationsValidator />
+            <div class="col-auto">
+                <label for="scheduleYear" class="form-label">Année</label>
+                <InputNumber id="scheduleYear" class="form-control" @bind-Value="scheduleFormModel.Year" />
+            </div>
+            <div class="col-auto">
+                <label for="scheduleStart" class="form-label">Début</label>
+                <InputText id="scheduleStart" type="time" class="form-control" @bind-Value="scheduleFormModel.StartTime" />
+            </div>
+            <div class="col-auto">
+                <label for="scheduleEnd" class="form-label">Fin</label>
+                <InputText id="scheduleEnd" type="time" class="form-control" @bind-Value="scheduleFormModel.EndTime" />
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-success">Ajouter</button>
+            </div>
+            <div class="col-12">
+                <ValidationSummary />
+            </div>
+        </EditForm>
+    </div>
+
+    @if (schedules is null)
+    {
+        <p><em>Chargement des horaires...</em></p>
+    }
+    else if (schedules.Count == 0)
+    {
+        <p>Aucun horaire défini pour ce site.</p>
+    }
+    else
+    {
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Année</th>
+                    <th>Début</th>
+                    <th>Fin</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var schedule in schedules)
+                {
+                    <tr>
+                        <td>@schedule.Year</td>
+                        <td>@schedule.StartTime</td>
+                        <td>@schedule.EndTime</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteSchedule(schedule.Id)">
+                                Supprimer
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
 @code {
     private List<SiteDto>? sites;
     private CreateSiteDto formModel = new();
@@ -161,8 +233,13 @@ else
     // Courts
     private SiteDto? selectedSite;
     private int? selectedSiteId;
+    private string activeTab = "courts";
     private List<CourtDto>? courts;
     private CreateCourtDto courtFormModel = new();
+
+    // Schedules
+    private List<SiteScheduleDto>? schedules;
+    private CreateSiteScheduleDto scheduleFormModel = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -260,6 +337,7 @@ else
                 selectedSite = null;
                 selectedSiteId = null;
                 courts = null;
+                schedules = null;
             }
 
             await LoadSites();
@@ -272,12 +350,18 @@ else
 
     // ── Courts ──
 
-    private async Task SelectSite(SiteDto site)
+    private async Task SelectSite(SiteDto site, string tab)
     {
         selectedSite = site;
         selectedSiteId = site.Id;
+        activeTab = tab;
         courtFormModel = new CreateCourtDto { SiteId = site.Id };
-        await LoadCourts();
+        scheduleFormModel = new CreateSiteScheduleDto { SiteId = site.Id };
+
+        if (tab == "courts")
+            await LoadCourts();
+        else if (tab == "schedules")
+            await LoadSchedules();
     }
 
     private async Task LoadCourts()
@@ -331,6 +415,66 @@ else
             }
 
             await LoadCourts();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+    }
+
+    // ── Schedules ──
+
+    private async Task LoadSchedules()
+    {
+        if (selectedSiteId is null) return;
+
+        try
+        {
+            schedules = await ScheduleService.GetBySiteIdAsync(selectedSiteId.Value);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors du chargement des horaires : {ex.Message}";
+        }
+    }
+
+    private async Task HandleScheduleSubmit()
+    {
+        errorMessage = null;
+
+        try
+        {
+            scheduleFormModel.SiteId = selectedSiteId!.Value;
+            var result = await ScheduleService.CreateAsync(scheduleFormModel);
+            if (result is null)
+            {
+                errorMessage = "Erreur lors de la création de l'horaire. Vérifiez qu'il n'existe pas déjà pour cette année.";
+                return;
+            }
+
+            scheduleFormModel = new CreateSiteScheduleDto { SiteId = selectedSiteId.Value };
+            await LoadSchedules();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+    }
+
+    private async Task DeleteSchedule(int id)
+    {
+        errorMessage = null;
+
+        try
+        {
+            var success = await ScheduleService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = "Erreur lors de la suppression de l'horaire.";
+                return;
+            }
+
+            await LoadSchedules();
         }
         catch (Exception ex)
         {

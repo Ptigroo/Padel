@@ -10,5 +10,6 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7021") });
 builder.Services.AddScoped<ISiteService, SiteService>();
 builder.Services.AddScoped<ICourtService, CourtService>();
+builder.Services.AddScoped<IScheduleService, ScheduleService>();
 
 await builder.Build().RunAsync();
