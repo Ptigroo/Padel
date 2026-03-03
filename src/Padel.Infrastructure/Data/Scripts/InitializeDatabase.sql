@@ -53,3 +53,23 @@ BEGIN
     );
 END
 GO
+
+-- Table des membres
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Members]') AND type = N'U')
+BEGIN
+    CREATE TABLE [dbo].[Members] (
+        [Id]                 INT            IDENTITY(1,1) NOT NULL,
+        [Matricule]          NVARCHAR(10)   NOT NULL,
+        [FirstName]          NVARCHAR(100)  NOT NULL,
+        [LastName]           NVARCHAR(100)  NOT NULL,
+        [Email]              NVARCHAR(200)  NOT NULL,
+        [MemberType]         NVARCHAR(10)   NOT NULL,
+        [SiteId]             INT            NULL,
+        [ReservationBlocked] BIT            NOT NULL DEFAULT 0,
+        [BlockedUntil]       DATETIME2      NULL,
+        CONSTRAINT [PK_Members] PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT [FK_Members_Sites] FOREIGN KEY ([SiteId]) REFERENCES [dbo].[Sites]([Id]) ON DELETE SET NULL,
+        CONSTRAINT [UQ_Members_Matricule] UNIQUE ([Matricule])
+    );
+END
+GO
