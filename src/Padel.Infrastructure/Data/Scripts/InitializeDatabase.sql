@@ -54,6 +54,20 @@ BEGIN
 END
 GO
 
+-- Table des jours de fermeture
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[ClosureDays]') AND type = N'U')
+BEGIN
+    CREATE TABLE [dbo].[ClosureDays] (
+        [Id]     INT            IDENTITY(1,1) NOT NULL,
+        [Date]   DATE           NOT NULL,
+        [Reason] NVARCHAR(250)  NULL,
+        [SiteId] INT            NULL,
+        CONSTRAINT [PK_ClosureDays] PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT [FK_ClosureDays_Sites] FOREIGN KEY ([SiteId]) REFERENCES [dbo].[Sites]([Id]) ON DELETE CASCADE
+    );
+END
+GO
+
 -- Table des membres
 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Members]') AND type = N'U')
 BEGIN

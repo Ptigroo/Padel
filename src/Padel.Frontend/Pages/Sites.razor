@@ -2,6 +2,7 @@
 @inject ISiteService SiteService
 @inject ICourtService CourtService
 @inject IScheduleService ScheduleService
+@inject IClosureDayService ClosureDayService
 
 <PageTitle>Gestion des sites</PageTitle>
 
@@ -82,6 +83,9 @@ else
                         </button>
                         <button class="btn btn-sm btn-outline-warning me-1" @onclick='() => SelectSite(site, "schedules")'>
                             Horaires
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary me-1" @onclick='() => SelectSite(site, "closures")'>
+                            Fermetures
                         </button>
                         <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => ShowEditForm(site)">
                             Modifier
@@ -222,6 +226,85 @@ else
     }
 }
 
+@* ── Section jours de fermeture du site sélectionné ── *@
+@if (selectedSite is not null && activeTab == "closures")
+{
+    <hr />
+    <h3>Jours de fermeture — @selectedSite.Name</h3>
+
+    <div class="mb-3">
+        <EditForm Model="closureFormModel" OnValidSubmit="HandleClosureSubmit" class="row g-2 align-items-end">
+            <DataAnnotationsValidator />
+            <div class="col-auto">
+                <label for="closureDate" class="form-label">Date</label>
+                <InputText id="closureDate" type="date" class="form-control" @bind-Value="closureFormModel.Date" />
+            </div>
+            <div class="col-auto">
+                <label for="closureReason" class="form-label">Raison</label>
+                <InputText id="closureReason" class="form-control" @bind-Value="closureFormModel.Reason" />
+            </div>
+            <div class="col-auto">
+                <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" id="closureGlobal" @bind="isGlobalClosure" />
+                    <label class="form-check-label" for="closureGlobal">Global (tous les sites)</label>
+                </div>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-success">Ajouter</button>
+            </div>
+            <div class="col-12">
+                <ValidationSummary />
+            </div>
+        </EditForm>
+    </div>
+
+    @if (closureDays is null)
+    {
+        <p><em>Chargement des jours de fermeture...</em></p>
+    }
+    else if (closureDays.Count == 0)
+    {
+        <p>Aucun jour de fermeture défini.</p>
+    }
+    else
+    {
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Raison</th>
+                    <th>Périmètre</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var closure in closureDays)
+                {
+                    <tr>
+                        <td>@closure.Date</td>
+                        <td>@(closure.Reason ?? "—")</td>
+                        <td>
+                            @if (closure.IsGlobal)
+                            {
+                                <span class="badge bg-dark">Global</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-info text-dark">@(closure.SiteName ?? "Site")</span>
+                            }
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteClosure(closure.Id)">
+                                Supprimer
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
 @code {
     private List<SiteDto>? sites;
     private CreateSiteDto formModel = new();
@@ -240,6 +323,11 @@ else
     // Schedules
     private List<SiteScheduleDto>? schedules;
     private CreateSiteScheduleDto scheduleFormModel = new();
+
+    // Closure Days
+    private List<ClosureDayDto>? closureDays;
+    private CreateClosureDayDto closureFormModel = new();
+    private bool isGlobalClosure;
 
     protected override async Task OnInitializedAsync()
     {
@@ -338,6 +426,7 @@ else
                 selectedSiteId = null;
                 courts = null;
                 schedules = null;
+                closureDays = null;
             }
 
             await LoadSites();
@@ -357,11 +446,15 @@ else
         activeTab = tab;
         courtFormModel = new CreateCourtDto { SiteId = site.Id };
         scheduleFormModel = new CreateSiteScheduleDto { SiteId = site.Id };
+        closureFormModel = new CreateClosureDayDto { SiteId = site.Id };
+        isGlobalClosure = false;
 
         if (tab == "courts")
             await LoadCourts();
         else if (tab == "schedules")
             await LoadSchedules();
+        else if (tab == "closures")
+            await LoadClosureDays();
     }
 
     private async Task LoadCourts()
@@ -475,6 +568,67 @@ else
             }
 
             await LoadSchedules();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+    }
+
+    // ── Closure Days ──
+
+    private async Task LoadClosureDays()
+    {
+        if (selectedSiteId is null) return;
+
+        try
+        {
+            closureDays = await ClosureDayService.GetBySiteIdAsync(selectedSiteId.Value);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors du chargement des jours de fermeture : {ex.Message}";
+        }
+    }
+
+    private async Task HandleClosureSubmit()
+    {
+        errorMessage = null;
+
+        try
+        {
+            closureFormModel.SiteId = isGlobalClosure ? null : selectedSiteId;
+            var result = await ClosureDayService.CreateAsync(closureFormModel);
+            if (result is null)
+            {
+                errorMessage = "Erreur lors de la création du jour de fermeture.";
+                return;
+            }
+
+            closureFormModel = new CreateClosureDayDto { SiteId = selectedSiteId };
+            isGlobalClosure = false;
+            await LoadClosureDays();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+    }
+
+    private async Task DeleteClosure(int id)
+    {
+        errorMessage = null;
+
+        try
+        {
+            var success = await ClosureDayService.DeleteAsync(id);
+            if (!success)
+            {
+                errorMessage = "Erreur lors de la suppression du jour de fermeture.";
+                return;
+            }
+
+            await LoadClosureDays();
         }
         catch (Exception ex)
         {
