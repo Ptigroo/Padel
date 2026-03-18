@@ -141,3 +141,41 @@ BEGIN
     );
 END
 GO
+
+-- =============================================
+-- Utilisateurs SQL dédiés
+-- =============================================
+
+-- Utilisateur applicatif : padel_app_user (CRUD)
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = N'padel_app_user')
+BEGIN
+    CREATE USER [padel_app_user] WITHOUT LOGIN;
+END
+GO
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[Sites] TO [padel_app_user];
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[Courts] TO [padel_app_user];
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[SiteSchedules] TO [padel_app_user];
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[ClosureDays] TO [padel_app_user];
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[Members] TO [padel_app_user];
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[Matches] TO [padel_app_user];
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[MatchPlayers] TO [padel_app_user];
+GRANT SELECT, INSERT, UPDATE, DELETE ON [dbo].[Payments] TO [padel_app_user];
+GO
+
+-- Utilisateur lecture seule : padel_readonly (reporting / statistiques)
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = N'padel_readonly')
+BEGIN
+    CREATE USER [padel_readonly] WITHOUT LOGIN;
+END
+GO
+
+GRANT SELECT ON [dbo].[Sites] TO [padel_readonly];
+GRANT SELECT ON [dbo].[Courts] TO [padel_readonly];
+GRANT SELECT ON [dbo].[SiteSchedules] TO [padel_readonly];
+GRANT SELECT ON [dbo].[ClosureDays] TO [padel_readonly];
+GRANT SELECT ON [dbo].[Members] TO [padel_readonly];
+GRANT SELECT ON [dbo].[Matches] TO [padel_readonly];
+GRANT SELECT ON [dbo].[MatchPlayers] TO [padel_readonly];
+GRANT SELECT ON [dbo].[Payments] TO [padel_readonly];
+GO
