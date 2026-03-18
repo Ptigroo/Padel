@@ -10,6 +10,9 @@ public class PadelDbContext(DbContextOptions<PadelDbContext> options) : DbContex
     public DbSet<SiteSchedule> SiteSchedules => Set<SiteSchedule>();
     public DbSet<ClosureDay> ClosureDays => Set<ClosureDay>();
     public DbSet<Member> Members => Set<Member>();
+    public DbSet<Match> Matches => Set<Match>();
+    public DbSet<MatchPlayer> MatchPlayers => Set<MatchPlayer>();
+    public DbSet<Payment> Payments => Set<Payment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

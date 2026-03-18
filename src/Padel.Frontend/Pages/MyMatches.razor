@@ -1,0 +1,110 @@
+@page "/my-matches"
+@inject IMatchService MatchService
+
+<PageTitle>Mes matchs</PageTitle>
+
+<h1>Mes matchs</h1>
+
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+<div class="row mb-3 g-2 align-items-end">
+    <div class="col-auto">
+        <label class="form-label">Votre matricule</label>
+        <input type="text" class="form-control" @bind="matricule" placeholder="ex: G0001" />
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary" @onclick="LoadMatches">Rechercher</button>
+    </div>
+</div>
+
+@if (matches is not null)
+{
+    @if (matches.Count == 0)
+    {
+        <p>Aucun match trouvé.</p>
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Site / Terrain</th>
+                    <th>Type</th>
+                    <th>Statut</th>
+                    <th>Joueurs</th>
+                    <th>Rôle</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var match in matches)
+                {
+                    <tr>
+                        <td>@match.ScheduledAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@match.SiteName / @match.CourtName</td>
+                        <td><span class="badge @(match.MatchType == "Private" ? "bg-warning text-dark" : "bg-info")">@match.MatchType</span></td>
+                        <td><span class="badge @GetStatusBadge(match.Status)">@match.Status</span></td>
+                        <td>@match.PlayerCount / 4</td>
+                        <td>
+                            @if (match.OrganizerMatricule == matricule)
+                            {
+                                <span class="badge bg-primary">Organisateur</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Joueur</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private string matricule = string.Empty;
+    private List<MatchDto>? matches;
+    private string? errorMessage;
+
+    private async Task LoadMatches()
+    {
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(matricule))
+        {
+            errorMessage = "Veuillez saisir votre matricule.";
+            return;
+        }
+
+        try
+        {
+            var organized = await MatchService.GetByOrganizerAsync(matricule);
+            var playing = await MatchService.GetByPlayerAsync(matricule);
+
+            matches = organized
+                .Concat(playing.Where(p => !organized.Any(o => o.Id == p.Id)))
+                .OrderByDescending(m => m.ScheduledAt)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+    }
+
+    private static string GetStatusBadge(string status) => status switch
+    {
+        "Scheduled" => "bg-primary",
+        "Full" => "bg-success",
+        "Completed" => "bg-secondary",
+        "Cancelled" => "bg-danger",
+        _ => "bg-dark"
+    };
+}

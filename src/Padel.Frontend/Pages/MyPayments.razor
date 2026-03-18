@@ -1,0 +1,135 @@
+@page "/my-payments"
+@inject IPaymentService PaymentService
+
+<PageTitle>Mes paiements</PageTitle>
+
+<h1>Mes paiements</h1>
+
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+@if (successMessage is not null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @successMessage
+        <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+    </div>
+}
+
+<div class="row mb-3 g-2 align-items-end">
+    <div class="col-auto">
+        <label class="form-label">Votre matricule</label>
+        <input type="text" class="form-control" @bind="matricule" placeholder="ex: G0001" />
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary" @onclick="LoadPayments">Rechercher</button>
+    </div>
+</div>
+
+@if (payments is not null)
+{
+    <div class="alert @(balance > 0 ? "alert-warning" : "alert-success") mb-3">
+        <strong>Solde dû :</strong> @balance.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("fr-BE"))
+    </div>
+
+    @if (payments.Count == 0)
+    {
+        <p>Aucun paiement trouvé.</p>
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Match</th>
+                    <th>Site / Terrain</th>
+                    <th>Montant</th>
+                    <th>Statut</th>
+                    <th>Date paiement</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var payment in payments)
+                {
+                    <tr>
+                        <td>@payment.ScheduledAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@payment.SiteName / @payment.CourtName</td>
+                        <td>@payment.Amount.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("fr-BE"))</td>
+                        <td>
+                            <span class="badge @GetPaymentBadge(payment.Status)">@payment.Status</span>
+                        </td>
+                        <td>@(payment.PaidAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                        <td>
+                            @if (payment.Status == "Pending")
+                            {
+                                <button class="btn btn-sm btn-success" @onclick="() => Pay(payment.Id)">
+                                    Payer
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private string matricule = string.Empty;
+    private List<PaymentDto>? payments;
+    private decimal balance;
+    private string? errorMessage;
+    private string? successMessage;
+
+    private async Task LoadPayments()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (string.IsNullOrWhiteSpace(matricule))
+        {
+            errorMessage = "Veuillez saisir votre matricule.";
+            return;
+        }
+
+        try
+        {
+            payments = await PaymentService.GetByMemberAsync(matricule);
+            balance = await PaymentService.GetBalanceAsync(matricule);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+    }
+
+    private async Task Pay(int paymentId)
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        var result = await PaymentService.ProcessPaymentAsync(paymentId);
+        if (result is null)
+        {
+            errorMessage = "Erreur lors du paiement.";
+            return;
+        }
+
+        successMessage = "Paiement effectué avec succès !";
+        await LoadPayments();
+    }
+
+    private static string GetPaymentBadge(string status) => status switch
+    {
+        "Pending" => "bg-warning text-dark",
+        "Paid" => "bg-success",
+        "Refunded" => "bg-info",
+        _ => "bg-dark"
+    };
+}

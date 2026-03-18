@@ -1,0 +1,129 @@
+@page "/matches/public"
+@inject IMatchService MatchService
+@inject ISiteService SiteService
+
+<PageTitle>Matchs publics</PageTitle>
+
+<h1>Matchs publics</h1>
+
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+@if (successMessage is not null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @successMessage
+        <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+    </div>
+}
+
+<div class="row mb-3">
+    <div class="col-auto">
+        <select class="form-select" @onchange="OnFilterChanged">
+            <option value="">Tous les sites</option>
+            @if (sites is not null)
+            {
+                @foreach (var site in sites)
+                {
+                    <option value="@site.Id">@site.Name</option>
+                }
+            }
+        </select>
+    </div>
+</div>
+
+@if (matches is null)
+{
+    <p><em>Chargement...</em></p>
+}
+else if (matches.Count == 0)
+{
+    <p>Aucun match public disponible.</p>
+}
+else
+{
+    <div class="row">
+        @foreach (var match in matches)
+        {
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">@match.SiteName — @match.CourtName</h5>
+                        <p class="card-text">
+                            📅 @match.ScheduledAt.ToString("dd/MM/yyyy HH:mm") → @match.EndsAt.ToString("HH:mm")<br />
+                            👤 Organisateur : @match.OrganizerName<br />
+                            🎾 Joueurs : <strong>@match.PlayerCount / 4</strong>
+                        </p>
+                        @if (match.PlayerCount < 4)
+                        {
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Votre matricule"
+                                       @bind="joinMatricules[match.Id]" />
+                                <button class="btn btn-primary" @onclick="() => JoinMatch(match.Id)">Rejoindre</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Complet</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<MatchDto>? matches;
+    private List<SiteDto>? sites;
+    private int? filterSiteId;
+    private Dictionary<int, string> joinMatricules = [];
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        sites = await SiteService.GetAllAsync();
+        await LoadMatches();
+    }
+
+    private async Task LoadMatches()
+    {
+        matches = await MatchService.GetPublicAsync(filterSiteId);
+        joinMatricules = matches?.ToDictionary(m => m.Id, _ => string.Empty) ?? [];
+    }
+
+    private async Task OnFilterChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        filterSiteId = string.IsNullOrEmpty(value) ? null : int.Parse(value);
+        await LoadMatches();
+    }
+
+    private async Task JoinMatch(int matchId)
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (!joinMatricules.TryGetValue(matchId, out var matricule) || string.IsNullOrWhiteSpace(matricule))
+        {
+            errorMessage = "Veuillez saisir votre matricule.";
+            return;
+        }
+
+        var result = await MatchService.JoinAsync(matchId, matricule);
+        if (result is null)
+        {
+            errorMessage = "Impossible de rejoindre ce match. Vérifiez les contraintes.";
+            return;
+        }
+
+        successMessage = "Vous avez rejoint le match avec succès !";
+        await LoadMatches();
+    }
+}

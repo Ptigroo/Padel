@@ -21,6 +21,13 @@ public class SiteScheduleRepository(PadelDbContext context) : ISiteScheduleRepos
         return await context.SiteSchedules.FindAsync(id);
     }
 
+    public async Task<SiteSchedule?> GetForYearAsync(int siteId, int year)
+    {
+        return await context.SiteSchedules
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.SiteId == siteId && s.Year == year);
+    }
+
     public async Task<bool> ExistsAsync(int siteId, int year)
     {
         return await context.SiteSchedules

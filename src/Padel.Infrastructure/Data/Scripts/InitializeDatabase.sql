@@ -87,3 +87,57 @@ BEGIN
     );
 END
 GO
+
+-- Table des matchs
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Matches]') AND type = N'U')
+BEGIN
+    CREATE TABLE [dbo].[Matches] (
+        [Id]           INT            IDENTITY(1,1) NOT NULL,
+        [CourtId]      INT            NOT NULL,
+        [OrganizerId]  INT            NOT NULL,
+        [ScheduledAt]  DATETIME2      NOT NULL,
+        [EndsAt]       DATETIME2      NOT NULL,
+        [MatchType]    NVARCHAR(10)   NOT NULL,
+        [Status]       NVARCHAR(15)   NOT NULL,
+        CONSTRAINT [PK_Matches] PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT [FK_Matches_Courts] FOREIGN KEY ([CourtId]) REFERENCES [dbo].[Courts]([Id]),
+        CONSTRAINT [FK_Matches_Members] FOREIGN KEY ([OrganizerId]) REFERENCES [dbo].[Members]([Id])
+    );
+END
+GO
+
+-- Table des joueurs de match
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[MatchPlayers]') AND type = N'U')
+BEGIN
+    CREATE TABLE [dbo].[MatchPlayers] (
+        [Id]       INT       IDENTITY(1,1) NOT NULL,
+        [MatchId]  INT       NOT NULL,
+        [MemberId] INT       NOT NULL,
+        [JoinedAt] DATETIME2 NOT NULL,
+        CONSTRAINT [PK_MatchPlayers] PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT [FK_MatchPlayers_Matches] FOREIGN KEY ([MatchId]) REFERENCES [dbo].[Matches]([Id]) ON DELETE CASCADE,
+        CONSTRAINT [FK_MatchPlayers_Members] FOREIGN KEY ([MemberId]) REFERENCES [dbo].[Members]([Id]),
+        CONSTRAINT [UQ_MatchPlayers_MatchId_MemberId] UNIQUE ([MatchId], [MemberId])
+    );
+END
+GO
+
+-- Table des paiements
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Payments]') AND type = N'U')
+BEGIN
+    CREATE TABLE [dbo].[Payments] (
+        [Id]            INT            IDENTITY(1,1) NOT NULL,
+        [MatchPlayerId] INT            NOT NULL,
+        [MatchId]       INT            NOT NULL,
+        [MemberId]      INT            NOT NULL,
+        [Amount]        DECIMAL(10,2)  NOT NULL,
+        [Status]        NVARCHAR(10)   NOT NULL,
+        [CreatedAt]     DATETIME2      NOT NULL,
+        [PaidAt]        DATETIME2      NULL,
+        CONSTRAINT [PK_Payments] PRIMARY KEY CLUSTERED ([Id] ASC),
+        CONSTRAINT [FK_Payments_MatchPlayers] FOREIGN KEY ([MatchPlayerId]) REFERENCES [dbo].[MatchPlayers]([Id]) ON DELETE CASCADE,
+        CONSTRAINT [FK_Payments_Matches] FOREIGN KEY ([MatchId]) REFERENCES [dbo].[Matches]([Id]),
+        CONSTRAINT [FK_Payments_Members] FOREIGN KEY ([MemberId]) REFERENCES [dbo].[Members]([Id])
+    );
+END
+GO

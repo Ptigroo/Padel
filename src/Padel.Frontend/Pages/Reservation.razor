@@ -1,0 +1,283 @@
+@page "/reservations"
+@inject ISiteService SiteService
+@inject ICourtService CourtService
+@inject IMatchService MatchService
+
+<PageTitle>Réservation</PageTitle>
+
+<h1>Réserver un terrain</h1>
+
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+@if (successMessage is not null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @successMessage
+        <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+    </div>
+}
+
+@* Step indicators *@
+<div class="mb-4">
+    <div class="d-flex gap-2">
+        <span class="badge @(step >= 1 ? "bg-primary" : "bg-secondary")">1. Site</span>
+        <span class="badge @(step >= 2 ? "bg-primary" : "bg-secondary")">2. Terrain</span>
+        <span class="badge @(step >= 3 ? "bg-primary" : "bg-secondary")">3. Date & Heure</span>
+        <span class="badge @(step >= 4 ? "bg-primary" : "bg-secondary")">4. Type & Matricule</span>
+        <span class="badge @(step >= 5 ? "bg-primary" : "bg-secondary")">5. Confirmation</span>
+    </div>
+</div>
+
+@* Step 1: Site *@
+@if (step == 1)
+{
+    <div class="card">
+        <div class="card-header">Sélectionner un site</div>
+        <div class="card-body">
+            @if (sites is null)
+            {
+                <p><em>Chargement...</em></p>
+            }
+            else
+            {
+                <div class="list-group">
+                    @foreach (var site in sites)
+                    {
+                        <button class="list-group-item list-group-item-action" @onclick="() => SelectSite(site)">
+                            <strong>@site.Name</strong> — @site.Address
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@* Step 2: Court *@
+@if (step == 2)
+{
+    <div class="card">
+        <div class="card-header">Sélectionner un terrain — @selectedSite!.Name</div>
+        <div class="card-body">
+            @if (courts is null)
+            {
+                <p><em>Chargement...</em></p>
+            }
+            else if (courts.Count == 0)
+            {
+                <p>Aucun terrain disponible pour ce site.</p>
+            }
+            else
+            {
+                <div class="list-group">
+                    @foreach (var court in courts)
+                    {
+                        <button class="list-group-item list-group-item-action" @onclick="() => SelectCourt(court)">
+                            @court.Name
+                        </button>
+                    }
+                </div>
+            }
+            <button class="btn btn-outline-secondary mt-3" @onclick="() => step = 1">← Retour</button>
+        </div>
+    </div>
+}
+
+@* Step 3: Date and Time *@
+@if (step == 3)
+{
+    <div class="card">
+        <div class="card-header">Date & Heure — @selectedCourt!.Name (@selectedSite!.Name)</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-auto">
+                    <label class="form-label">Date</label>
+                    <input type="date" class="form-control" @bind="selectedDate" @bind:after="OnDateChanged" />
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">Heure de début</label>
+                    <input type="time" class="form-control" @bind="selectedTime" />
+                </div>
+            </div>
+            <div class="mt-3">
+                <button class="btn btn-primary" @onclick="GoToStep4">Continuer →</button>
+                <button class="btn btn-outline-secondary ms-2" @onclick="() => step = 2">← Retour</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* Step 4: Type and Matricule *@
+@if (step == 4)
+{
+    <div class="card">
+        <div class="card-header">Type de match & Identification</div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Type de match</label>
+                <select class="form-select" @bind="matchModel.MatchType">
+                    <option value="Private">Privé</option>
+                    <option value="Public">Public</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Votre matricule</label>
+                <input type="text" class="form-control" @bind="matchModel.OrganizerMatricule" placeholder="ex: G0001" />
+            </div>
+            <button class="btn btn-success" @onclick="CreateMatch" disabled="@isSubmitting">Confirmer la réservation</button>
+            <button class="btn btn-outline-secondary ms-2" @onclick="() => step = 3">← Retour</button>
+        </div>
+    </div>
+}
+
+@* Step 5: Confirmation + Add players for private *@
+@if (step == 5 && createdMatch is not null)
+{
+    <div class="card border-success">
+        <div class="card-header bg-success text-white">Réservation confirmée</div>
+        <div class="card-body">
+            <p><strong>Match #@createdMatch.Id</strong> — @createdMatch.SiteName / @createdMatch.CourtName</p>
+            <p>📅 @createdMatch.ScheduledAt.ToString("dd/MM/yyyy HH:mm") → @createdMatch.EndsAt.ToString("HH:mm")</p>
+            <p>Type : <span class="badge @(createdMatch.MatchType == "Private" ? "bg-warning text-dark" : "bg-info")">@createdMatch.MatchType</span></p>
+            <p>Joueurs : @createdMatch.PlayerCount / 4</p>
+
+            <h5 class="mt-3">Joueurs inscrits</h5>
+            <ul class="list-group mb-3">
+                @foreach (var player in createdMatch.Players)
+                {
+                    <li class="list-group-item">
+                        <code>@player.Matricule</code> — @player.FirstName @player.LastName
+                        <span class="badge @(player.PaymentStatus == "Paid" ? "bg-success" : "bg-warning text-dark") ms-2">@player.PaymentStatus</span>
+                    </li>
+                }
+            </ul>
+
+            @if (createdMatch.MatchType == "Private" && createdMatch.PlayerCount < 4)
+            {
+                <h5>Ajouter un joueur</h5>
+                <div class="row g-2 align-items-end mb-3">
+                    <div class="col-auto">
+                        <input type="text" class="form-control" @bind="addPlayerMatricule" placeholder="Matricule du joueur" />
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary" @onclick="AddPlayer">Ajouter</button>
+                    </div>
+                </div>
+            }
+
+            <button class="btn btn-outline-primary" @onclick="ResetWizard">Nouvelle réservation</button>
+        </div>
+    </div>
+}
+
+@code {
+    private List<SiteDto>? sites;
+    private List<CourtDto>? courts;
+    private SiteDto? selectedSite;
+    private CourtDto? selectedCourt;
+    private DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1));
+    private TimeOnly selectedTime = new(9, 0);
+    private CreateMatchDto matchModel = new();
+    private MatchDto? createdMatch;
+    private string addPlayerMatricule = string.Empty;
+    private int step = 1;
+    private bool isSubmitting;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        sites = await SiteService.GetAllAsync();
+    }
+
+    private async Task SelectSite(SiteDto site)
+    {
+        selectedSite = site;
+        courts = await CourtService.GetBySiteIdAsync(site.Id);
+        step = 2;
+    }
+
+    private void SelectCourt(CourtDto court)
+    {
+        selectedCourt = court;
+        matchModel.CourtId = court.Id;
+        step = 3;
+    }
+
+    private void OnDateChanged() { }
+
+    private void GoToStep4()
+    {
+        matchModel.ScheduledAt = selectedDate.ToDateTime(selectedTime);
+        step = 4;
+    }
+
+    private async Task CreateMatch()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            var result = await MatchService.CreateAsync(matchModel);
+            if (result is null)
+            {
+                errorMessage = "Erreur lors de la création du match. Vérifiez les contraintes (blocage, solde, horaires, etc.).";
+                return;
+            }
+
+            createdMatch = result;
+            successMessage = "Réservation créée avec succès !";
+            step = 5;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task AddPlayer()
+    {
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(addPlayerMatricule) || createdMatch is null) return;
+
+        var dto = new AddPlayerDto
+        {
+            Matricule = addPlayerMatricule,
+            OrganizerMatricule = matchModel.OrganizerMatricule
+        };
+
+        var result = await MatchService.AddPlayerAsync(createdMatch.Id, dto);
+        if (result is null)
+        {
+            errorMessage = "Erreur lors de l'ajout du joueur.";
+            return;
+        }
+
+        createdMatch = result;
+        addPlayerMatricule = string.Empty;
+    }
+
+    private void ResetWizard()
+    {
+        step = 1;
+        selectedSite = null;
+        selectedCourt = null;
+        createdMatch = null;
+        matchModel = new CreateMatchDto();
+        addPlayerMatricule = string.Empty;
+        errorMessage = null;
+        successMessage = null;
+    }
+}

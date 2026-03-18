@@ -32,6 +32,10 @@ builder.Services.AddScoped<IClosureDayRepository, ClosureDayRepository>();
 builder.Services.AddScoped<IClosureDayService, ClosureDayService>();
 builder.Services.AddScoped<IMemberRepository, MemberRepository>();
 builder.Services.AddScoped<IMemberService, MemberService>();
+builder.Services.AddScoped<IMatchRepository, MatchRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IMatchService, MatchService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 var app = builder.Build();
 

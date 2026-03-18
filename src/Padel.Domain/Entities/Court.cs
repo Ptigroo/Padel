@@ -6,4 +6,5 @@ public class Court
     public required string Name { get; set; }
     public int SiteId { get; set; }
     public Site? Site { get; set; }
+    public ICollection<Match> Matches { get; set; } = [];
 }

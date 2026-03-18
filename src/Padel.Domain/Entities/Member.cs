@@ -12,4 +12,7 @@ public class Member
     public Site? Site { get; set; }
     public bool ReservationBlocked { get; set; }
     public DateTime? BlockedUntil { get; set; }
+    public ICollection<Match> OrganizedMatches { get; set; } = [];
+    public ICollection<MatchPlayer> MatchPlayers { get; set; } = [];
+    public ICollection<Payment> Payments { get; set; } = [];
 }
