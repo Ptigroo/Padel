@@ -8,4 +8,5 @@ public interface ICourtService
     Task<CourtDto?> GetByIdAsync(int id);
     Task<CourtDto> CreateAsync(CreateCourtDto dto);
     Task<bool> DeleteAsync(int id);
+    Task<IEnumerable<SlotDto>> GetAvailableSlotsAsync(int courtId, DateOnly date);
 }

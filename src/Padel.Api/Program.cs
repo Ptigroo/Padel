@@ -20,8 +20,11 @@ builder.Services.AddCors(options =>
     });
 });
 
+// CF-AA-001: Use padel_app_user in production. Falls back to DefaultConnection for dev (LocalDB).
+var connectionString = builder.Configuration.GetConnectionString("PadelAppUser")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<PadelDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 
 builder.Services.AddScoped<ISiteRepository, SiteRepository>();
 builder.Services.AddScoped<ISiteService, SiteService>();

@@ -33,7 +33,7 @@ BEGIN
         [Name]   NVARCHAR(100) NOT NULL,
         [SiteId] INT           NOT NULL,
         CONSTRAINT [PK_Courts] PRIMARY KEY CLUSTERED ([Id] ASC),
-        CONSTRAINT [FK_Courts_Sites] FOREIGN KEY ([SiteId]) REFERENCES [dbo].[Sites]([Id])
+        CONSTRAINT [FK_Courts_Sites] FOREIGN KEY ([SiteId]) REFERENCES [dbo].[Sites]([Id]) ON DELETE NO ACTION
     );
 END
 GO
@@ -100,8 +100,8 @@ BEGIN
         [MatchType]    NVARCHAR(10)   NOT NULL,
         [Status]       NVARCHAR(15)   NOT NULL,
         CONSTRAINT [PK_Matches] PRIMARY KEY CLUSTERED ([Id] ASC),
-        CONSTRAINT [FK_Matches_Courts] FOREIGN KEY ([CourtId]) REFERENCES [dbo].[Courts]([Id]),
-        CONSTRAINT [FK_Matches_Members] FOREIGN KEY ([OrganizerId]) REFERENCES [dbo].[Members]([Id])
+        CONSTRAINT [FK_Matches_Courts] FOREIGN KEY ([CourtId]) REFERENCES [dbo].[Courts]([Id]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_Matches_Members] FOREIGN KEY ([OrganizerId]) REFERENCES [dbo].[Members]([Id]) ON DELETE NO ACTION
     );
 END
 GO
@@ -116,7 +116,7 @@ BEGIN
         [JoinedAt] DATETIME2 NOT NULL,
         CONSTRAINT [PK_MatchPlayers] PRIMARY KEY CLUSTERED ([Id] ASC),
         CONSTRAINT [FK_MatchPlayers_Matches] FOREIGN KEY ([MatchId]) REFERENCES [dbo].[Matches]([Id]) ON DELETE CASCADE,
-        CONSTRAINT [FK_MatchPlayers_Members] FOREIGN KEY ([MemberId]) REFERENCES [dbo].[Members]([Id]),
+        CONSTRAINT [FK_MatchPlayers_Members] FOREIGN KEY ([MemberId]) REFERENCES [dbo].[Members]([Id]) ON DELETE NO ACTION,
         CONSTRAINT [UQ_MatchPlayers_MatchId_MemberId] UNIQUE ([MatchId], [MemberId])
     );
 END
@@ -136,8 +136,8 @@ BEGIN
         [PaidAt]        DATETIME2      NULL,
         CONSTRAINT [PK_Payments] PRIMARY KEY CLUSTERED ([Id] ASC),
         CONSTRAINT [FK_Payments_MatchPlayers] FOREIGN KEY ([MatchPlayerId]) REFERENCES [dbo].[MatchPlayers]([Id]) ON DELETE CASCADE,
-        CONSTRAINT [FK_Payments_Matches] FOREIGN KEY ([MatchId]) REFERENCES [dbo].[Matches]([Id]),
-        CONSTRAINT [FK_Payments_Members] FOREIGN KEY ([MemberId]) REFERENCES [dbo].[Members]([Id])
+        CONSTRAINT [FK_Payments_Matches] FOREIGN KEY ([MatchId]) REFERENCES [dbo].[Matches]([Id]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_Payments_Members] FOREIGN KEY ([MemberId]) REFERENCES [dbo].[Members]([Id]) ON DELETE NO ACTION
     );
 END
 GO

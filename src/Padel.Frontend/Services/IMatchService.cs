@@ -9,6 +9,7 @@ public interface IMatchService
     Task<List<MatchDto>> GetPublicAsync(int? siteId);
     Task<List<MatchDto>> GetByOrganizerAsync(string matricule);
     Task<List<MatchDto>> GetByPlayerAsync(string matricule);
+    Task<List<MatchDto>> GetBySiteAsync(int siteId);
     Task<MatchDto?> CreateAsync(CreateMatchDto dto);
     Task<MatchDto?> AddPlayerAsync(int matchId, AddPlayerDto dto);
     Task<MatchDto?> JoinAsync(int matchId, string matricule);

@@ -93,20 +93,41 @@
 @if (step == 3)
 {
     <div class="card">
-        <div class="card-header">Date & Heure — @selectedCourt!.Name (@selectedSite!.Name)</div>
+        <div class="card-header">Date & Créneau — @selectedCourt!.Name (@selectedSite!.Name)</div>
         <div class="card-body">
-            <div class="row g-3">
-                <div class="col-auto">
-                    <label class="form-label">Date</label>
-                    <input type="date" class="form-control" @bind="selectedDate" @bind:after="OnDateChanged" />
-                </div>
-                <div class="col-auto">
-                    <label class="form-label">Heure de début</label>
-                    <input type="time" class="form-control" @bind="selectedTime" />
-                </div>
+            <div class="mb-3">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-control" style="max-width: 250px;" @bind="selectedDate" @bind:after="LoadSlots" />
             </div>
+
+            @if (isLoadingSlots)
+            {
+                <p><em>Chargement des créneaux...</em></p>
+            }
+            else if (availableSlots is not null)
+            {
+                @if (availableSlots.Count == 0)
+                {
+                    <div class="alert alert-warning">Aucun créneau disponible pour cette date (jour de fermeture ou aucun horaire défini).</div>
+                }
+                else
+                {
+                    <label class="form-label">Créneau horaire</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var slot in availableSlots)
+                        {
+                            var isSelected = selectedSlot?.Start == slot.Start;
+                            <button class="btn @(isSelected ? "btn-primary" : "btn-outline-primary")"
+                                    @onclick="() => SelectSlot(slot)">
+                                @slot.Start.ToString("HH:mm") — @slot.End.ToString("HH:mm")
+                            </button>
+                        }
+                    </div>
+                }
+            }
+
             <div class="mt-3">
-                <button class="btn btn-primary" @onclick="GoToStep4">Continuer →</button>
+                <button class="btn btn-primary" @onclick="GoToStep4" disabled="@(selectedSlot is null)">Continuer →</button>
                 <button class="btn btn-outline-secondary ms-2" @onclick="() => step = 2">← Retour</button>
             </div>
         </div>
@@ -182,7 +203,9 @@
     private SiteDto? selectedSite;
     private CourtDto? selectedCourt;
     private DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1));
-    private TimeOnly selectedTime = new(9, 0);
+    private List<SlotDto>? availableSlots;
+    private SlotDto? selectedSlot;
+    private bool isLoadingSlots;
     private CreateMatchDto matchModel = new();
     private MatchDto? createdMatch;
     private string addPlayerMatricule = string.Empty;
@@ -207,14 +230,39 @@
     {
         selectedCourt = court;
         matchModel.CourtId = court.Id;
+        availableSlots = null;
+        selectedSlot = null;
         step = 3;
     }
 
-    private void OnDateChanged() { }
+    private async Task LoadSlots()
+    {
+        if (selectedCourt is null) return;
+        isLoadingSlots = true;
+        selectedSlot = null;
+        try
+        {
+            availableSlots = await CourtService.GetAvailableSlotsAsync(selectedCourt.Id, selectedDate);
+        }
+        catch
+        {
+            availableSlots = [];
+        }
+        finally
+        {
+            isLoadingSlots = false;
+        }
+    }
+
+    private void SelectSlot(SlotDto slot)
+    {
+        selectedSlot = slot;
+    }
 
     private void GoToStep4()
     {
-        matchModel.ScheduledAt = selectedDate.ToDateTime(selectedTime);
+        if (selectedSlot is null) return;
+        matchModel.ScheduledAt = selectedSlot.Start;
         step = 4;
     }
 
@@ -277,6 +325,8 @@
         createdMatch = null;
         matchModel = new CreateMatchDto();
         addPlayerMatricule = string.Empty;
+        availableSlots = null;
+        selectedSlot = null;
         errorMessage = null;
         successMessage = null;
     }

@@ -59,6 +59,13 @@ public class MatchesController(IMatchService matchService) : ControllerBase
         }
     }
 
+    [HttpGet("site/{siteId}")]
+    public async Task<ActionResult<IEnumerable<MatchDto>>> GetBySite(int siteId)
+    {
+        var matches = await matchService.GetBySiteAsync(siteId);
+        return Ok(matches);
+    }
+
     [HttpPost]
     public async Task<ActionResult<MatchDto>> Create(CreateMatchDto dto)
     {

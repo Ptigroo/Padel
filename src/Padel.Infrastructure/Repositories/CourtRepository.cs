@@ -35,4 +35,18 @@ public class CourtRepository(PadelDbContext context) : ICourtRepository
         context.Courts.Remove(court);
         await context.SaveChangesAsync();
     }
+
+    public async Task<IEnumerable<Match>> GetMatchesForCourtOnDateAsync(int courtId, DateOnly date)
+    {
+        var dateStart = date.ToDateTime(TimeOnly.MinValue);
+        var dateEnd = date.ToDateTime(TimeOnly.MaxValue);
+
+        return await context.Matches
+            .Where(m => m.CourtId == courtId
+                && m.Status != MatchStatus.Cancelled
+                && m.ScheduledAt >= dateStart
+                && m.ScheduledAt <= dateEnd)
+            .AsNoTracking()
+            .ToListAsync();
+    }
 }

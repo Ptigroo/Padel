@@ -1,0 +1,189 @@
+@page "/admin/matches"
+@inject IMatchService MatchService
+@inject ISiteService SiteService
+
+<PageTitle>Administration — Matchs</PageTitle>
+
+<h1>Tous les matchs</h1>
+
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+@if (successMessage is not null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @successMessage
+        <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+    </div>
+}
+
+<div class="row mb-3">
+    <div class="col-auto">
+        <label class="form-label">Filtrer par site</label>
+        <select class="form-select" @bind="selectedSiteId" @bind:after="LoadMatches">
+            <option value="0">Tous les sites</option>
+            @if (sites is not null)
+            {
+                @foreach (var site in sites)
+                {
+                    <option value="@site.Id">@site.Name</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-auto d-flex align-items-end">
+        <button class="btn btn-warning" @onclick="TriggerDayBefore" disabled="@isProcessing">
+            ⚙️ Déclencher règles J-1
+        </button>
+    </div>
+</div>
+
+@if (matches is null)
+{
+    <p><em>Chargement...</em></p>
+}
+else if (matches.Count == 0)
+{
+    <p>Aucun match trouvé.</p>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Site</th>
+                <th>Terrain</th>
+                <th>Date/Heure</th>
+                <th>Type</th>
+                <th>Statut</th>
+                <th>Organisateur</th>
+                <th>Joueurs</th>
+                <th>Détails</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var match in matches)
+            {
+                <tr>
+                    <td>@match.Id</td>
+                    <td>@match.SiteName</td>
+                    <td>@match.CourtName</td>
+                    <td>@match.ScheduledAt.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>
+                        <span class="badge @(match.MatchType == "Private" ? "bg-warning text-dark" : "bg-info")">
+                            @match.MatchType
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge @GetStatusBadge(match.Status)">@match.Status</span>
+                    </td>
+                    <td><code>@match.OrganizerMatricule</code> @match.OrganizerName</td>
+                    <td>@match.PlayerCount / 4</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ToggleDetail(match.Id)">
+                            @(expandedMatchId == match.Id ? "Masquer" : "Voir")
+                        </button>
+                    </td>
+                </tr>
+                @if (expandedMatchId == match.Id)
+                {
+                    <tr>
+                        <td colspan="9">
+                            <div class="p-3 bg-light">
+                                <h6>Joueurs inscrits</h6>
+                                <ul class="list-group list-group-flush">
+                                    @foreach (var player in match.Players)
+                                    {
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span><code>@player.Matricule</code> — @player.FirstName @player.LastName</span>
+                                            <span class="badge @(player.PaymentStatus == "Paid" ? "bg-success" : "bg-warning text-dark")">
+                                                @player.PaymentStatus
+                                            </span>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<SiteDto>? sites;
+    private List<MatchDto>? matches;
+    private int selectedSiteId;
+    private int? expandedMatchId;
+    private bool isProcessing;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        sites = await SiteService.GetAllAsync();
+        await LoadMatches();
+    }
+
+    private async Task LoadMatches()
+    {
+        try
+        {
+            matches = selectedSiteId > 0
+                ? await MatchService.GetBySiteAsync(selectedSiteId)
+                : await MatchService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task TriggerDayBefore()
+    {
+        isProcessing = true;
+        errorMessage = null;
+        try
+        {
+            var success = await MatchService.ProcessDayBeforeAsync();
+            if (success)
+            {
+                successMessage = "Règles J-1 appliquées avec succès.";
+                await LoadMatches();
+            }
+            else
+            {
+                errorMessage = "Erreur lors de l'exécution des règles J-1.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private void ToggleDetail(int matchId)
+    {
+        expandedMatchId = expandedMatchId == matchId ? null : matchId;
+    }
+
+    private static string GetStatusBadge(string status) => status switch
+    {
+        "Scheduled" => "bg-primary",
+        "Full" => "bg-success",
+        "Completed" => "bg-secondary",
+        "Cancelled" => "bg-danger",
+        _ => "bg-dark"
+    };
+}

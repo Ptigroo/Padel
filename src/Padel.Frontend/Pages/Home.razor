@@ -4,5 +4,59 @@
 
 <h1>Bienvenue sur Padel Manager</h1>
 
-<p>Application de gestion de terrains de padel.</p>
-<p>Utilisez le menu de navigation pour accéder à la gestion des sites.</p>
+<p class="lead">Application de gestion de terrains de padel — réservations, paiements et suivi.</p>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">📋 Règles de réservation</div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Durée d'un match : <strong>1h30</strong> (+ 15 min de pause)</li>
+                    <li>Tarif : <strong>60 €</strong> par match (4 × 15 € par joueur)</li>
+                    <li>Le paiement est obligatoire avant le match</li>
+                    <li>Un organisateur avec solde impayé ne peut pas réserver</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">⏱️ Délais de réservation</div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li><strong>Membre Global</strong> (Gxxxx) : jusqu'à 3 semaines avant</li>
+                    <li><strong>Membre Site</strong> (Sxxxxx) : jusqu'à 2 semaines avant (son site uniquement)</li>
+                    <li><strong>Membre Libre</strong> (Lxxxxx) : jusqu'à 5 jours avant</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-dark">⚙️ Règles automatiques J-1</div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Match privé incomplet → devient public + organisateur bloqué 7 jours</li>
+                    <li>Joueur impayé → retiré du match, sa place redevient libre</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">🚀 Accès rapide</div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="reservations" class="btn btn-outline-primary">Réserver un terrain</a>
+                    <a href="matches/public" class="btn btn-outline-info">Matchs publics</a>
+                    <a href="my-matches" class="btn btn-outline-secondary">Mes matchs</a>
+                    <a href="my-payments" class="btn btn-outline-warning">Mes paiements</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

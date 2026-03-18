@@ -28,4 +28,9 @@ public class CourtService(HttpClient httpClient) : ICourtService
         var response = await httpClient.DeleteAsync($"api/courts/{id}");
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<List<SlotDto>> GetAvailableSlotsAsync(int courtId, DateOnly date)
+    {
+        return await httpClient.GetFromJsonAsync<List<SlotDto>>($"api/courts/{courtId}/slots/{date:yyyy-MM-dd}") ?? [];
+    }
 }

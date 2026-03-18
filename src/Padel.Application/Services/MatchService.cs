@@ -50,6 +50,12 @@ public class MatchService(
         return matches.Select(MapToDto);
     }
 
+    public async Task<IEnumerable<MatchDto>> GetBySiteAsync(int siteId)
+    {
+        var matches = await matchRepository.GetBySiteAsync(siteId);
+        return matches.Select(MapToDto);
+    }
+
     public async Task<MatchDto> CreateAsync(CreateMatchDto dto)
     {
         // Parse match type

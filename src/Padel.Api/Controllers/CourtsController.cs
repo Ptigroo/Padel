@@ -48,4 +48,18 @@ public class CourtsController(ICourtService courtService) : ControllerBase
 
         return NoContent();
     }
+
+    [HttpGet("{id}/slots/{date}")]
+    public async Task<ActionResult<IEnumerable<SlotDto>>> GetAvailableSlots(int id, DateOnly date)
+    {
+        try
+        {
+            var slots = await courtService.GetAvailableSlotsAsync(id, date);
+            return Ok(slots);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

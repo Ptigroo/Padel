@@ -31,6 +31,11 @@ public class MatchService(HttpClient httpClient) : IMatchService
         return await httpClient.GetFromJsonAsync<List<MatchDto>>($"api/matches/player/{matricule}") ?? [];
     }
 
+    public async Task<List<MatchDto>> GetBySiteAsync(int siteId)
+    {
+        return await httpClient.GetFromJsonAsync<List<MatchDto>>($"api/matches/site/{siteId}") ?? [];
+    }
+
     public async Task<MatchDto?> CreateAsync(CreateMatchDto dto)
     {
         var response = await httpClient.PostAsJsonAsync("api/matches", dto);

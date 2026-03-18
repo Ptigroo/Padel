@@ -8,4 +8,5 @@ public interface ICourtRepository
     Task<Court?> GetByIdAsync(int id);
     Task<Court> CreateAsync(Court court);
     Task DeleteAsync(Court court);
+    Task<IEnumerable<Match>> GetMatchesForCourtOnDateAsync(int courtId, DateOnly date);
 }
