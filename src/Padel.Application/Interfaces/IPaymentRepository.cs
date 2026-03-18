@@ -9,6 +9,8 @@ public interface IPaymentRepository
     Task<Payment?> GetByIdAsync(int id);
     Task<decimal> GetUnpaidBalanceAsync(int memberId);
     Task<decimal> GetUnpaidPublicMatchDebtAsync(int memberId);
+    Task<decimal> GetTotalRevenueAsync();
+    Task<decimal> GetRevenueByEsiteAsync(int siteId);
     Task<Payment> CreateAsync(Payment payment);
     Task<Payment> UpdateAsync(Payment payment);
 }

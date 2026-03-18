@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Padel.Application.Interfaces;
 using Padel.Application.Services;
 using Padel.Infrastructure.Data;
+using Padel.Infrastructure.Jobs;
 using Padel.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,8 @@ builder.Services.AddScoped<IMatchRepository, MatchRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IStatsService, StatsService>();
+builder.Services.AddHostedService<DayBeforeMatchJob>();
 
 var app = builder.Build();
 

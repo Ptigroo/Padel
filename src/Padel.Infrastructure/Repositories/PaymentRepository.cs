@@ -60,6 +60,22 @@ public class PaymentRepository(PadelDbContext context) : IPaymentRepository
         return matches.Sum(m => (4 - m.Players.Count) * 15m);
     }
 
+    public async Task<decimal> GetTotalRevenueAsync()
+    {
+        return await context.Payments
+            .Where(p => p.Status == PaymentStatus.Paid)
+            .SumAsync(p => p.Amount);
+    }
+
+    public async Task<decimal> GetRevenueByEsiteAsync(int siteId)
+    {
+        return await context.Payments
+            .Include(p => p.Match)
+                .ThenInclude(m => m!.Court)
+            .Where(p => p.Status == PaymentStatus.Paid && p.Match!.Court!.SiteId == siteId)
+            .SumAsync(p => p.Amount);
+    }
+
     public async Task<Payment> CreateAsync(Payment payment)
     {
         context.Payments.Add(payment);

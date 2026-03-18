@@ -1,0 +1,122 @@
+@page "/stats"
+@inject IStatsService StatsService
+
+<PageTitle>Statistiques</PageTitle>
+
+<h1>Statistiques</h1>
+
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@if (globalStats is null)
+{
+    <p><em>Chargement des statistiques...</em></p>
+}
+else
+{
+    <h2>Vue globale</h2>
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-bg-primary">
+                <div class="card-body text-center">
+                    <h3>@globalStats.TotalSites</h3>
+                    <p class="mb-0">Sites</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-info">
+                <div class="card-body text-center">
+                    <h3>@globalStats.TotalMembers</h3>
+                    <p class="mb-0">Membres</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-warning">
+                <div class="card-body text-center">
+                    <h3>@globalStats.TotalMatches</h3>
+                    <p class="mb-0">Matchs</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-success">
+                <div class="card-body text-center">
+                    <h3>@globalStats.TotalRevenue.ToString("C", culture)</h3>
+                    <p class="mb-0">Chiffre d'affaires</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">Matchs par statut (global)</div>
+                <div class="card-body">
+                    <div class="d-flex gap-3 flex-wrap">
+                        <span class="badge bg-primary fs-6">Scheduled: @globalStats.MatchesScheduled</span>
+                        <span class="badge bg-success fs-6">Full: @globalStats.MatchesFull</span>
+                        <span class="badge bg-secondary fs-6">Completed: @globalStats.MatchesCompleted</span>
+                        <span class="badge bg-danger fs-6">Cancelled: @globalStats.MatchesCancelled</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (siteStats is not null && siteStats.Count > 0)
+    {
+        <h2>Détails par site</h2>
+        <div class="row">
+            @foreach (var site in siteStats)
+            {
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <strong>@site.SiteName</strong>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                <li>🎾 <strong>@site.TotalCourts</strong> terrains</li>
+                                <li>👥 <strong>@site.TotalMembers</strong> membres</li>
+                                <li>📅 <strong>@site.TotalMatches</strong> matchs</li>
+                                <li>💰 <strong>@site.Revenue.ToString("C", culture)</strong> CA</li>
+                            </ul>
+                            <hr />
+                            <div class="d-flex gap-1 flex-wrap">
+                                <span class="badge bg-primary">Scheduled: @site.MatchesScheduled</span>
+                                <span class="badge bg-success">Full: @site.MatchesFull</span>
+                                <span class="badge bg-secondary">Completed: @site.MatchesCompleted</span>
+                                <span class="badge bg-danger">Cancelled: @site.MatchesCancelled</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private GlobalStatsDto? globalStats;
+    private List<SiteStatsDto>? siteStats;
+    private string? errorMessage;
+    private static readonly System.Globalization.CultureInfo culture = System.Globalization.CultureInfo.GetCultureInfo("fr-BE");
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            globalStats = await StatsService.GetGlobalStatsAsync();
+            siteStats = await StatsService.GetAllSiteStatsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors du chargement des statistiques : {ex.Message}";
+        }
+    }
+}

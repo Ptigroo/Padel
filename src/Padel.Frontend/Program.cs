@@ -15,5 +15,6 @@ builder.Services.AddScoped<IClosureDayService, ClosureDayService>();
 builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IStatsService, StatsService>();
 
 await builder.Build().RunAsync();
