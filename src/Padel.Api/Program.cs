@@ -45,6 +45,35 @@ builder.Services.AddHostedService<DayBeforeMatchJob>();
 
 var app = builder.Build();
 
+// =============================================
+// Initialisation automatique de la base de données
+// =============================================
+var autoSeed = builder.Configuration.GetValue<bool>("Database:AutoSeedData", true);
+
+if (autoSeed)
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        try
+        {
+            var context = services.GetRequiredService<PadelDbContext>();
+
+            // Créer la base de données si elle n'existe pas
+            await context.Database.EnsureCreatedAsync();
+
+            // Initialiser les données de démonstration si la base est vide
+            var seeder = new DatabaseSeeder(context);
+            await seeder.SeedAsync();
+        }
+        catch (Exception ex)
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "❌ Une erreur s'est produite lors de l'initialisation de la base de données.");
+        }
+    }
+}
+
 // Configure the HTTP request pipeline.
 
 app.UseCors("AllowFrontend");
