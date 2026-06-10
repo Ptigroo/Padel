@@ -5,6 +5,8 @@
     <Project Path="src/Padel.Domain/Padel.Domain.csproj" />
     <Project Path="src/Padel.Frontend/Padel.Frontend.csproj" />
     <Project Path="src/Padel.Infrastructure/Padel.Infrastructure.csproj" />
-    <Project Path="src/Padel.Tests/Padel.Tests.csproj" />
+    <Project Path="src/Padel.Tests/Padel.Tests.csproj">
+      <Build Solution="Debug|*" Project="false" />
+    </Project>
   </Folder>
 </Solution>

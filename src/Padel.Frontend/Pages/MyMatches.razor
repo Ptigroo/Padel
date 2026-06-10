@@ -13,6 +13,14 @@
     </div>
 }
 
+@if (successMessage is not null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @successMessage
+        <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+    </div>
+}
+
 <div class="row mb-3 g-2 align-items-end">
     <div class="col-auto">
         <label class="form-label">Votre matricule</label>
@@ -40,6 +48,7 @@
                     <th>Statut</th>
                     <th>Joueurs</th>
                     <th>Rôle</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -61,6 +70,14 @@
                                 <span class="badge bg-secondary">Joueur</span>
                             }
                         </td>
+                        <td>
+                            @if (match.OrganizerMatricule == matricule && match.MatchType == "Private" && match.PlayerCount < 4)
+                            {
+                                <button class="btn btn-sm btn-success" @onclick="() => ShowAddPlayerModal(match)">
+                                    <i class="bi bi-person-plus"></i> Ajouter joueur
+                                </button>
+                            }
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -68,14 +85,49 @@
     }
 }
 
+@* Modal pour ajouter un joueur *@
+@if (showAddPlayerModal && selectedMatch is not null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ajouter un joueur au match</h5>
+                    <button type="button" class="btn-close" @onclick="CloseAddPlayerModal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Match :</strong> @selectedMatch.SiteName / @selectedMatch.CourtName</p>
+                    <p><strong>Date :</strong> @selectedMatch.ScheduledAt.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p><strong>Joueurs actuels :</strong> @selectedMatch.PlayerCount / 4</p>
+
+                    <div class="mb-3">
+                        <label class="form-label">Matricule du joueur</label>
+                        <input type="text" class="form-control" @bind="newPlayerMatricule" placeholder="ex: G0002" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseAddPlayerModal">Annuler</button>
+                    <button type="button" class="btn btn-primary" @onclick="AddPlayerToMatch">Ajouter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private string matricule = string.Empty;
     private List<MatchDto>? matches;
     private string? errorMessage;
+    private string? successMessage;
+
+    private bool showAddPlayerModal = false;
+    private MatchDto? selectedMatch;
+    private string newPlayerMatricule = string.Empty;
 
     private async Task LoadMatches()
     {
         errorMessage = null;
+        successMessage = null;
 
         if (string.IsNullOrWhiteSpace(matricule))
         {
@@ -92,6 +144,64 @@
                 .Concat(playing.Where(p => !organized.Any(o => o.Id == p.Id)))
                 .OrderByDescending(m => m.ScheduledAt)
                 .ToList();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+    }
+
+    private void ShowAddPlayerModal(MatchDto match)
+    {
+        selectedMatch = match;
+        newPlayerMatricule = string.Empty;
+        showAddPlayerModal = true;
+    }
+
+    private void CloseAddPlayerModal()
+    {
+        showAddPlayerModal = false;
+        selectedMatch = null;
+        newPlayerMatricule = string.Empty;
+    }
+
+    private async Task AddPlayerToMatch()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (string.IsNullOrWhiteSpace(newPlayerMatricule))
+        {
+            errorMessage = "Veuillez saisir le matricule du joueur.";
+            return;
+        }
+
+        if (selectedMatch is null)
+        {
+            errorMessage = "Aucun match sélectionné.";
+            return;
+        }
+
+        try
+        {
+            var dto = new AddPlayerDto
+            {
+                Matricule = newPlayerMatricule,
+                OrganizerMatricule = matricule
+            };
+
+            var result = await MatchService.AddPlayerAsync(selectedMatch.Id, dto);
+
+            if (result is not null)
+            {
+                successMessage = $"Joueur {newPlayerMatricule} ajouté avec succès !";
+                CloseAddPlayerModal();
+                await LoadMatches();
+            }
+            else
+            {
+                errorMessage = "Erreur lors de l'ajout du joueur.";
+            }
         }
         catch (Exception ex)
         {
