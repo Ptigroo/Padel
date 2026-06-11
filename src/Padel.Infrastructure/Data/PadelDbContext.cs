@@ -13,6 +13,7 @@ public class PadelDbContext(DbContextOptions<PadelDbContext> options) : DbContex
     public DbSet<Match> Matches => Set<Match>();
     public DbSet<MatchPlayer> MatchPlayers => Set<MatchPlayer>();
     public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<Administrator> Administrators => Set<Administrator>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

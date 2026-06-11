@@ -1,9 +1,22 @@
 @page "/stats"
 @inject IStatsService StatsService
+@inject AdminSessionService SessionService
 
 <PageTitle>Statistiques</PageTitle>
 
 <h1>Statistiques</h1>
+
+@if (SessionService.IsLoggedIn)
+{
+    <div class="alert alert-info">
+        Connecté en tant que : <strong>@SessionService.CurrentAdmin?.Username</strong> 
+        (@SessionService.CurrentAdmin?.Type)
+        @if (SessionService.IsSiteAdmin)
+        {
+            <span> - Site : @SessionService.CurrentAdmin?.SiteName</span>
+        }
+    </div>
+}
 
 @if (errorMessage is not null)
 {
@@ -112,7 +125,19 @@ else
         try
         {
             globalStats = await StatsService.GetGlobalStatsAsync();
-            siteStats = await StatsService.GetAllSiteStatsAsync();
+            var allSiteStats = await StatsService.GetAllSiteStatsAsync();
+
+            // Filtrer par site si admin site
+            if (SessionService.IsSiteAdmin && SessionService.SiteId.HasValue)
+            {
+                siteStats = allSiteStats
+                    .Where(s => s.SiteId == SessionService.SiteId.Value)
+                    .ToList();
+            }
+            else
+            {
+                siteStats = allSiteStats;
+            }
         }
         catch (Exception ex)
         {

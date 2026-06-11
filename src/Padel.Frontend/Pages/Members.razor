@@ -1,10 +1,23 @@
 @page "/members"
 @inject IMemberService MemberService
 @inject ISiteService SiteService
+@inject AdminSessionService SessionService
 
 <PageTitle>Gestion des membres</PageTitle>
 
 <h1>Gestion des membres</h1>
+
+@if (SessionService.IsLoggedIn)
+{
+    <div class="alert alert-info">
+        Connecté en tant que : <strong>@SessionService.CurrentAdmin?.Username</strong> 
+        (@SessionService.CurrentAdmin?.Type)
+        @if (SessionService.IsSiteAdmin)
+        {
+            <span> - Site : @SessionService.CurrentAdmin?.SiteName</span>
+        }
+    </div>
+}
 
 @if (errorMessage is not null)
 {
@@ -200,9 +213,21 @@ else
     {
         try
         {
-            members = filterSiteId.HasValue
+            var allMembers = filterSiteId.HasValue
                 ? await MemberService.GetBySiteIdAsync(filterSiteId.Value)
                 : await MemberService.GetAllAsync();
+
+            // Filtrer par site si admin site
+            if (SessionService.IsSiteAdmin && SessionService.SiteId.HasValue)
+            {
+                members = allMembers.Where(m => 
+                    m.SiteId == null || m.SiteId == SessionService.SiteId.Value
+                ).ToList();
+            }
+            else
+            {
+                members = allMembers;
+            }
         }
         catch (Exception ex)
         {

@@ -16,5 +16,7 @@ builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
+builder.Services.AddScoped<IAdministratorService, AdministratorService>();
+builder.Services.AddSingleton<AdminSessionService>();
 
 await builder.Build().RunAsync();

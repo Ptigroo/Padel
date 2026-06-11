@@ -1,10 +1,23 @@
 @page "/admin/matches"
 @inject IMatchService MatchService
 @inject ISiteService SiteService
+@inject AdminSessionService SessionService
 
 <PageTitle>Administration — Matchs</PageTitle>
 
 <h1>Tous les matchs</h1>
+
+@if (SessionService.IsLoggedIn)
+{
+    <div class="alert alert-info">
+        Connecté en tant que : <strong>@SessionService.CurrentAdmin?.Username</strong> 
+        (@SessionService.CurrentAdmin?.Type)
+        @if (SessionService.IsSiteAdmin)
+        {
+            <span> - Site : @SessionService.CurrentAdmin?.SiteName</span>
+        }
+    </div>
+}
 
 @if (errorMessage is not null)
 {

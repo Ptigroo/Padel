@@ -3,10 +3,23 @@
 @inject ICourtService CourtService
 @inject IScheduleService ScheduleService
 @inject IClosureDayService ClosureDayService
+@inject AdminSessionService SessionService
 
 <PageTitle>Gestion des sites</PageTitle>
 
 <h1>Gestion des sites</h1>
+
+@if (SessionService.IsLoggedIn)
+{
+    <div class="alert alert-info">
+        Connecté en tant que : <strong>@SessionService.CurrentAdmin?.Username</strong> 
+        (@SessionService.CurrentAdmin?.Type)
+        @if (SessionService.IsSiteAdmin)
+        {
+            <span> - Site : @SessionService.CurrentAdmin?.SiteName</span>
+        }
+    </div>
+}
 
 @if (errorMessage is not null)
 {
@@ -338,7 +351,17 @@ else
     {
         try
         {
-            sites = await SiteService.GetAllAsync();
+            var allSites = await SiteService.GetAllAsync();
+
+            // Filtrer par site si admin site
+            if (SessionService.IsSiteAdmin && SessionService.SiteId.HasValue)
+            {
+                sites = allSites.Where(s => s.Id == SessionService.SiteId.Value).ToList();
+            }
+            else
+            {
+                sites = allSites;
+            }
         }
         catch (Exception ex)
         {

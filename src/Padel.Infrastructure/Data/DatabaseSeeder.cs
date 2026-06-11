@@ -119,7 +119,23 @@ public class DatabaseSeeder
         await _context.SaveChangesAsync();
 
         // =============================================
-        // 6. MATCHS
+        // 6. ADMINISTRATEURS
+        // =============================================
+        var administrators = new List<Administrator>
+        {
+            // Administrateurs Global
+            new() { Username = "AG0001", FirstName = "Admin", LastName = "Principal", Email = "admin.principal@padel.com", Type = AdministratorType.Global, SiteId = null },
+            new() { Username = "AG0002", FirstName = "Super", LastName = "Admin", Email = "super.admin@padel.com", Type = AdministratorType.Global, SiteId = null },
+            // Administrateurs Site
+            new() { Username = "AS00001", FirstName = "Gérant", LastName = "Bruxelles", Email = "gerant.bruxelles@padel.com", Type = AdministratorType.Site, SiteId = sites[0].Id },
+            new() { Username = "AS00002", FirstName = "Manager", LastName = "Liège", Email = "manager.liege@padel.com", Type = AdministratorType.Site, SiteId = sites[1].Id },
+            new() { Username = "AS00003", FirstName = "Responsable", LastName = "Namur", Email = "responsable.namur@padel.com", Type = AdministratorType.Site, SiteId = sites[2].Id }
+        };
+        await _context.Administrators.AddRangeAsync(administrators);
+        await _context.SaveChangesAsync();
+
+        // =============================================
+        // 7. MATCHS
         // =============================================
         var today = DateTime.Today;
         var matches = new List<Match>
@@ -289,6 +305,9 @@ public class DatabaseSeeder
         Console.WriteLine($"   - Global : {members.Count(m => m.MemberType == DomainMemberType.Global)}");
         Console.WriteLine($"   - Site : {members.Count(m => m.MemberType == DomainMemberType.Site)}");
         Console.WriteLine($"   - Libre : {members.Count(m => m.MemberType == DomainMemberType.Libre)}");
+        Console.WriteLine($"👨‍💼 Administrateurs : {administrators.Count}");
+        Console.WriteLine($"   - Global : {administrators.Count(a => a.Type == AdministratorType.Global)}");
+        Console.WriteLine($"   - Site : {administrators.Count(a => a.Type == AdministratorType.Site)}");
         Console.WriteLine($"🏆 Matchs : {matches.Count}");
         Console.WriteLine($"   - Privés : {matches.Count(m => m.MatchType == DomainMatchType.Private)}");
         Console.WriteLine($"   - Publics : {matches.Count(m => m.MatchType == DomainMatchType.Public)}");
