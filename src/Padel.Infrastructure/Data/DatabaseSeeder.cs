@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Padel.Domain.Entities;
 using DomainMatchType = Padel.Domain.Entities.MatchType;
 using DomainMatchStatus = Padel.Domain.Entities.MatchStatus;
@@ -27,7 +27,13 @@ public class DatabaseSeeder
         // Vérifier si la base contient déjà des données
         if (await _context.Sites.AnyAsync())
         {
-            // La base est déjà initialisée
+            // Si la base existe mais n'a pas d'administrateurs, les ajouter
+            if (!await _context.Administrators.AnyAsync())
+            {
+                Console.WriteLine("⚙️ Ajout des administrateurs manquants...");
+                await SeedAdministratorsAsync();
+                Console.WriteLine("✅ Administrateurs ajoutés avec succès!");
+            }
             return;
         }
 
@@ -318,4 +324,22 @@ public class DatabaseSeeder
         Console.WriteLine($"💵 Chiffre d'affaires total : {totalPaid:F2} €");
         Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     }
-}
+
+    /// <summary>
+    /// Ajoute uniquement les administrateurs de démonstration
+    /// </summary>
+    private async Task SeedAdministratorsAsync()
+    {
+        var sites = await _context.Sites.OrderBy(s => s.Id).ToListAsync();
+        if (sites.Count < 3) { Console.WriteLine("Pas assez de sites"); return; }
+        var administrators = new List<Administrator>
+        {
+            new() { Username = "AG0001", FirstName = "Admin", LastName = "Principal", Email = "admin.principal@padel.com", Type = AdministratorType.Global, SiteId = null },
+            new() { Username = "AG0002", FirstName = "Super", LastName = "Admin", Email = "super.admin@padel.com", Type = AdministratorType.Global, SiteId = null },
+            new() { Username = "AS00001", FirstName = "Gérant", LastName = "Bruxelles", Email = "gerant.bruxelles@padel.com", Type = AdministratorType.Site, SiteId = sites[0].Id },
+            new() { Username = "AS00002", FirstName = "Manager", LastName = "Liège", Email = "manager.liege@padel.com", Type = AdministratorType.Site, SiteId = sites[1].Id },
+            new() { Username = "AS00003", FirstName = "Responsable", LastName = "Namur", Email = "responsable.namur@padel.com", Type = AdministratorType.Site, SiteId = sites[2].Id }
+        };
+        await _context.Administrators.AddRangeAsync(administrators);
+        await _context.SaveChangesAsync();
+    }}
