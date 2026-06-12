@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Padel.Domain.Entities;
 using Padel.Infrastructure.Data;
 using Padel.Infrastructure.Repositories;
+using DomainMatchType = Padel.Domain.Entities.MatchType;
 
 namespace Padel.Tests.Repositories;
 
@@ -49,7 +50,7 @@ public class MatchRepositoryTests : IDisposable
             OrganizerId = member.Id,
             ScheduledAt = DateTime.Now.AddDays(1),
             EndsAt = DateTime.Now.AddDays(1).AddHours(1.5),
-            MatchType = MatchType.Public,
+            MatchType = DomainMatchType.Public,
             Status = MatchStatus.Scheduled
         };
         var match2 = new Match
@@ -58,7 +59,7 @@ public class MatchRepositoryTests : IDisposable
             OrganizerId = member.Id,
             ScheduledAt = DateTime.Now.AddDays(2),
             EndsAt = DateTime.Now.AddDays(2).AddHours(1.5),
-            MatchType = MatchType.Private,
+            MatchType = DomainMatchType.Private,
             Status = MatchStatus.Full
         };
         await _context.Matches.AddRangeAsync(match1, match2);
@@ -68,7 +69,7 @@ public class MatchRepositoryTests : IDisposable
         var result = await _repository.GetAllAsync();
 
         // Assert
-        Assert.Equal(2, result.Count);
+        Assert.Equal(2, result.Count());
     }
 
     [Fact]
@@ -100,7 +101,7 @@ public class MatchRepositoryTests : IDisposable
             OrganizerId = member.Id,
             ScheduledAt = DateTime.Now.AddDays(1),
             EndsAt = DateTime.Now.AddDays(1).AddHours(1.5),
-            MatchType = MatchType.Public,
+            MatchType = DomainMatchType.Public,
             Status = MatchStatus.Scheduled
         };
         await _context.Matches.AddAsync(match);
@@ -117,7 +118,7 @@ public class MatchRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetBySiteIdAsync_ReturnsMatchesForSite()
+    public async Task GetBySiteAsync_ReturnsMatchesForSite()
     {
         // Arrange
         var site1 = new Site { Name = "Site 1", Address = "111 Test" };
@@ -147,7 +148,7 @@ public class MatchRepositoryTests : IDisposable
             OrganizerId = member.Id,
             ScheduledAt = DateTime.Now.AddDays(1),
             EndsAt = DateTime.Now.AddDays(1).AddHours(1.5),
-            MatchType = MatchType.Public
+            MatchType = DomainMatchType.Public
         };
         var match2 = new Match
         {
@@ -155,13 +156,13 @@ public class MatchRepositoryTests : IDisposable
             OrganizerId = member.Id,
             ScheduledAt = DateTime.Now.AddDays(1),
             EndsAt = DateTime.Now.AddDays(1).AddHours(1.5),
-            MatchType = MatchType.Public
+            MatchType = DomainMatchType.Public
         };
         await _context.Matches.AddRangeAsync(match1, match2);
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetBySiteIdAsync(site1.Id);
+        var result = (await _repository.GetBySiteAsync(site1.Id)).ToList();
 
         // Assert
         Assert.Single(result);
@@ -197,7 +198,7 @@ public class MatchRepositoryTests : IDisposable
             OrganizerId = member.Id,
             ScheduledAt = DateTime.Now.AddDays(1),
             EndsAt = DateTime.Now.AddDays(1).AddHours(1.5),
-            MatchType = MatchType.Public,
+            MatchType = DomainMatchType.Public,
             Status = MatchStatus.Scheduled
         };
 
@@ -211,7 +212,7 @@ public class MatchRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteAsync_RemovesMatch()
+    public async Task UpdateAsync_UpdatesMatch()
     {
         // Arrange
         var site = new Site { Name = "Test Site", Address = "123 Test St" };
@@ -239,16 +240,20 @@ public class MatchRepositoryTests : IDisposable
             OrganizerId = member.Id,
             ScheduledAt = DateTime.Now.AddDays(1),
             EndsAt = DateTime.Now.AddDays(1).AddHours(1.5),
-            MatchType = MatchType.Public
+            MatchType = DomainMatchType.Public,
+            Status = MatchStatus.Scheduled
         };
         await _context.Matches.AddAsync(match);
         await _context.SaveChangesAsync();
 
         // Act
-        await _repository.DeleteAsync(match.Id);
+        match.Status = MatchStatus.Full;
+        await _repository.UpdateAsync(match);
 
         // Assert
-        Assert.Equal(0, await _context.Matches.CountAsync());
+        var updated = await _context.Matches.FindAsync(match.Id);
+        Assert.NotNull(updated);
+        Assert.Equal(MatchStatus.Full, updated.Status);
     }
 
     public void Dispose()

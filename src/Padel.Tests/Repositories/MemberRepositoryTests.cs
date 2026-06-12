@@ -47,7 +47,7 @@ public class MemberRepositoryTests : IDisposable
         var result = await _repository.GetAllAsync();
 
         // Assert
-        Assert.Equal(2, result.Count);
+        Assert.Equal(2, result.Count());
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public class MemberRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetBySiteIdAsync(site.Id);
+        var result = (await _repository.GetBySiteIdAsync(site.Id)).ToList();
 
         // Assert
         Assert.Single(result);

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Padel.Domain.Entities;
 using Padel.Infrastructure.Data;
 using Padel.Infrastructure.Repositories;
+using DomainMatchType = Padel.Domain.Entities.MatchType;
 
 namespace Padel.Tests.Repositories;
 
@@ -21,7 +22,7 @@ public class PaymentRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task GetByMatchIdAsync_ReturnsPaymentsForMatch()
+    public async Task GetByMatchAsync_ReturnsPaymentsForMatch()
     {
         // Arrange
         var site = new Site { Name = "Test Site", Address = "123 Test" };
@@ -49,7 +50,7 @@ public class PaymentRepositoryTests : IDisposable
             OrganizerId = member.Id,
             ScheduledAt = DateTime.Now.AddDays(1),
             EndsAt = DateTime.Now.AddDays(1).AddHours(1.5),
-            MatchType = MatchType.Public
+            MatchType = DomainMatchType.Public
         };
         await _context.Matches.AddAsync(match);
         await _context.SaveChangesAsync();
@@ -76,16 +77,17 @@ public class PaymentRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetByMatchIdAsync(match.Id);
+        var result = await _repository.GetByMatchAsync(match.Id);
+        var resultList = result.ToList();
 
         // Assert
         Assert.Single(result);
-        Assert.Equal(payment.Id, result[0].Id);
-        Assert.Equal(20.00m, result[0].Amount);
+        Assert.Equal(payment.Id, resultList[0].Id);
+        Assert.Equal(20.00m, resultList[0].Amount);
     }
 
     [Fact]
-    public async Task GetByMemberIdAsync_ReturnsPaymentsForMember()
+    public async Task GetByMemberAsync_ReturnsPaymentsForMember()
     {
         // Arrange
         var site = new Site { Name = "Test Site", Address = "123 Test" };
@@ -121,7 +123,7 @@ public class PaymentRepositoryTests : IDisposable
             OrganizerId = member1.Id,
             ScheduledAt = DateTime.Now.AddDays(1),
             EndsAt = DateTime.Now.AddDays(1).AddHours(1.5),
-            MatchType = MatchType.Public
+            MatchType = DomainMatchType.Public
         };
         await _context.Matches.AddAsync(match);
         await _context.SaveChangesAsync();
@@ -153,11 +155,12 @@ public class PaymentRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetByMemberIdAsync(member1.Id);
+        var result = await _repository.GetByMemberAsync(member1.Id);
+        var resultList = result.ToList();
 
         // Assert
         Assert.Single(result);
-        Assert.Equal(member1.Id, result[0].MemberId);
+        Assert.Equal(member1.Id, resultList[0].MemberId);
     }
 
     [Fact]
@@ -189,7 +192,7 @@ public class PaymentRepositoryTests : IDisposable
             OrganizerId = member.Id,
             ScheduledAt = DateTime.Now.AddDays(1),
             EndsAt = DateTime.Now.AddDays(1).AddHours(1.5),
-            MatchType = MatchType.Public
+            MatchType = DomainMatchType.Public
         };
         await _context.Matches.AddAsync(match);
         await _context.SaveChangesAsync();
@@ -246,7 +249,7 @@ public class PaymentRepositoryTests : IDisposable
             OrganizerId = member.Id,
             ScheduledAt = DateTime.Now.AddDays(1),
             EndsAt = DateTime.Now.AddDays(1).AddHours(1.5),
-            MatchType = MatchType.Public
+            MatchType = DomainMatchType.Public
         };
         await _context.Matches.AddAsync(match);
         await _context.SaveChangesAsync();

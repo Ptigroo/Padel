@@ -11,7 +11,7 @@ namespace Padel.Infrastructure.Data;
 /// Service responsable de l'initialisation automatique des données de démonstration
 /// </summary>
 public class DatabaseSeeder
-{
+{ 
     private readonly PadelDbContext _context;
 
     public DatabaseSeeder(PadelDbContext context)

@@ -23,10 +23,14 @@ public class StatsControllerTests
         // Arrange
         var stats = new GlobalStatsDto
         {
+            TotalSites = 2,
+            TotalMembers = 15,
             TotalMatches = 10,
-            TotalPayments = 25,
-            TotalRevenuePaid = 500.00m,
-            TotalRevenueExpected = 600.00m
+            TotalRevenue = 500.00m,
+            MatchesScheduled = 3,
+            MatchesFull = 4,
+            MatchesCompleted = 2,
+            MatchesCancelled = 1
         };
         _statsServiceMock.Setup(s => s.GetGlobalStatsAsync()).ReturnsAsync(stats);
 
@@ -37,7 +41,9 @@ public class StatsControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var returnedStats = Assert.IsType<GlobalStatsDto>(okResult.Value);
         Assert.Equal(10, returnedStats.TotalMatches);
-        Assert.Equal(500.00m, returnedStats.TotalRevenuePaid);
+        Assert.Equal(500.00m, returnedStats.TotalRevenue);
+        Assert.Equal(2, returnedStats.TotalSites);
+        Assert.Equal(15, returnedStats.TotalMembers);
     }
 
     [Fact]
@@ -49,10 +55,14 @@ public class StatsControllerTests
         {
             SiteId = siteId,
             SiteName = "Test Site",
+            TotalCourts = 3,
+            TotalMembers = 8,
             TotalMatches = 5,
-            TotalPayments = 10,
-            TotalRevenuePaid = 200.00m,
-            TotalRevenueExpected = 250.00m
+            Revenue = 200.00m,
+            MatchesScheduled = 1,
+            MatchesFull = 2,
+            MatchesCompleted = 1,
+            MatchesCancelled = 1
         };
         _statsServiceMock.Setup(s => s.GetSiteStatsAsync(siteId)).ReturnsAsync(stats);
 
@@ -64,6 +74,7 @@ public class StatsControllerTests
         var returnedStats = Assert.IsType<SiteStatsDto>(okResult.Value);
         Assert.Equal("Test Site", returnedStats.SiteName);
         Assert.Equal(5, returnedStats.TotalMatches);
+        Assert.Equal(200.00m, returnedStats.Revenue);
     }
 
     [Fact]
@@ -77,7 +88,7 @@ public class StatsControllerTests
         var result = await _controller.GetSiteStats(siteId);
 
         // Assert
-        Assert.IsType<NotFoundObjectResult>(result.Result);
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]
@@ -86,8 +97,8 @@ public class StatsControllerTests
         // Arrange
         var stats = new List<SiteStatsDto>
         {
-            new() { SiteId = 1, SiteName = "Site 1", TotalMatches = 5, TotalPayments = 10, TotalRevenuePaid = 200.00m, TotalRevenueExpected = 250.00m },
-            new() { SiteId = 2, SiteName = "Site 2", TotalMatches = 3, TotalPayments = 6, TotalRevenuePaid = 120.00m, TotalRevenueExpected = 150.00m }
+            new() { SiteId = 1, SiteName = "Site 1", TotalCourts = 3, TotalMembers = 8, TotalMatches = 5, Revenue = 200.00m, MatchesScheduled = 1, MatchesFull = 2, MatchesCompleted = 1, MatchesCancelled = 1 },
+            new() { SiteId = 2, SiteName = "Site 2", TotalCourts = 2, TotalMembers = 5, TotalMatches = 3, Revenue = 120.00m, MatchesScheduled = 1, MatchesFull = 1, MatchesCompleted = 1, MatchesCancelled = 0 }
         };
         _statsServiceMock.Setup(s => s.GetAllSiteStatsAsync()).ReturnsAsync(stats);
 
@@ -100,5 +111,7 @@ public class StatsControllerTests
         Assert.Equal(2, returnedStats.Count);
         Assert.Equal("Site 1", returnedStats[0].SiteName);
         Assert.Equal("Site 2", returnedStats[1].SiteName);
+        Assert.Equal(200.00m, returnedStats[0].Revenue);
+        Assert.Equal(120.00m, returnedStats[1].Revenue);
     }
 }
